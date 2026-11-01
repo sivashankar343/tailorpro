@@ -437,13 +437,14 @@ def view_invoice(id):
     return render_template('invoice_print.html', invoice=invoice)
 
 
-@billing_bp.route('/<int:id>/delete', methods=['POST'])
+@billing_bp.route('/<int:id>/delete', methods=['GET', 'POST'])
 @login_required
 def delete_invoice(id):
-    """Delete an invoice."""
+    """Delete an invoice (supports both POST form and GET confirmation)."""
     invoice = Invoice.query.filter_by(id=id, created_by=current_user.id).first_or_404()
     inv_no = invoice.invoice_number
     db.session.delete(invoice)
     db.session.commit()
-    flash(f'Invoice #{inv_no} deleted successfully.', 'info')
+    flash(f'Tax Invoice #{inv_no} has been deleted successfully.', 'success')
     return redirect(url_for('billing.list_invoices'))
+

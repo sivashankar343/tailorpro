@@ -87,12 +87,15 @@
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
                                 <a href="{{ url_for('billing.view_invoice', id=inv.id) }}" class="btn btn-outline-primary" title="View & Print Invoice">
-                                    <i class="bi bi-printer"></i>
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('billing.view_invoice', id=inv.id) }}#download" class="btn btn-outline-success" title="Download PDF">
+                                    <i class="bi bi-file-earmark-arrow-down"></i>
                                 </a>
                                 <a href="{{ url_for('billing.edit_invoice', id=inv.id) }}" class="btn btn-outline-secondary" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <button type="button" class="btn btn-outline-danger" title="Delete" data-bs-toggle="modal" data-bs-target="#delModal{{ inv.id }}">
+                                <button type="button" class="btn btn-outline-danger" title="Delete Bill" data-bs-toggle="modal" data-bs-target="#delModal{{ inv.id }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
