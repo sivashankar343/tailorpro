@@ -21,11 +21,10 @@ class CompanyForm(FlaskForm):
     submit = SubmitField('Save Company')
 
 
-def _generate_company_id():
-    """Generate a unique company ID like CMP-0001."""
-    last = Company.query.order_by(Company.id.desc()).first()
-    num = (last.id + 1) if last else 1
-    return f'CMP-{num:04d}'
+def _generate_company_id(user_id):
+    """Generate a unique company ID like CMP-0001 for this user."""
+    count = Company.query.filter_by(created_by=user_id).count()
+    return f'CMP-{count + 1:04d}'
 
 
 @companies_bp.route('/')
@@ -33,7 +32,7 @@ def _generate_company_id():
 def list_companies():
     search = request.args.get('search', '').strip()
     page = request.args.get('page', 1, type=int)
-    query = Company.query
+    query = Company.query.filter_by(created_by=current_user.id)
 
     if search:
         pattern = f'%{search}%'
@@ -54,7 +53,7 @@ def add_company():
     form = CompanyForm()
     if form.validate_on_submit():
         company = Company(
-            company_id=_generate_company_id(),
+            company_id=_generate_company_id(current_user.id),
             company_name=form.company_name.data.strip(),
             contact_person=form.contact_person.data.strip() if form.contact_person.data else None,
             phone=form.phone.data.strip() if form.phone.data else None,
@@ -86,7 +85,7 @@ def add_company():
 @companies_bp.route('/edit/<int:company_pk>', methods=['GET', 'POST'])
 @login_required
 def edit_company(company_pk):
-    company = Company.query.get_or_404(company_pk)
+    company = Company.query.filter_by(id=company_pk, created_by=current_user.id).first_or_404()
     form = CompanyForm(obj=company)
 
     if form.validate_on_submit():
@@ -116,7 +115,7 @@ def edit_company(company_pk):
 @companies_bp.route('/view/<int:company_pk>')
 @login_required
 def view_company(company_pk):
-    company = Company.query.get_or_404(company_pk)
+    company = Company.query.filter_by(id=company_pk, created_by=current_user.id).first_or_404()
     orders = company.orders.order_by(db.text('order_date desc')).all()
     return render_template('company_view.html', company=company, orders=orders)
 
@@ -124,7 +123,7 @@ def view_company(company_pk):
 @companies_bp.route('/toggle/<int:company_pk>', methods=['POST'])
 @login_required
 def toggle_company(company_pk):
-    company = Company.query.get_or_404(company_pk)
+    company = Company.query.filter_by(id=company_pk, created_by=current_user.id).first_or_404()
     company.is_active = not company.is_active
     db.session.commit()
 

@@ -26,10 +26,13 @@ class OrderForm(FlaskForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.company_id.choices = [
-            (c.id, f'{c.company_id} - {c.company_name}')
-            for c in Company.query.filter_by(is_active=True).order_by(Company.company_name).all()
-        ]
+        if current_user and current_user.is_authenticated:
+            self.company_id.choices = [
+                (c.id, f'{c.company_id} - {c.company_name}')
+                for c in Company.query.filter_by(created_by=current_user.id, is_active=True).order_by(Company.company_name).all()
+            ]
+        else:
+            self.company_id.choices = []
 
 
 class ProductionForm(FlaskForm):
@@ -41,27 +44,31 @@ class ProductionForm(FlaskForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        active_orders = Order.query.filter(Order.status != 'Completed').order_by(Order.order_date.desc()).all()
-        self.order_id.choices = [
-            (o.id, f'{o.order_id} — {o.company.company_name} — {o.garment_type} (Remaining: {o.remaining_quantity})')
-            for o in active_orders
-        ]
+        if current_user and current_user.is_authenticated:
+            active_orders = Order.query.filter(
+                Order.created_by == current_user.id,
+                Order.status != 'Completed'
+            ).order_by(Order.order_date.desc()).all()
+            self.order_id.choices = [
+                (o.id, f'{o.order_id} — {o.company.company_name} — {o.garment_type} (Remaining: {o.remaining_quantity})')
+                for o in active_orders
+            ]
+        else:
+            self.order_id.choices = []
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _generate_order_id():
-    last = Order.query.order_by(Order.id.desc()).first()
-    num = (last.id + 1) if last else 1
-    return f'ORD-{num:05d}'
+def _generate_order_id(user_id):
+    count = Order.query.filter_by(created_by=user_id).count()
+    return f'ORD-{count + 1:05d}'
 
 
-def _generate_entry_id():
-    last = ProductionEntry.query.order_by(ProductionEntry.id.desc()).first()
-    num = (last.id + 1) if last else 1
-    return f'PRD-{num:06d}'
+def _generate_entry_id(user_id):
+    count = ProductionEntry.query.filter_by(entered_by=user_id).count()
+    return f'PRD-{count + 1:06d}'
 
 
 # ---------------------------------------------------------------------------
@@ -75,7 +82,7 @@ def list_orders():
     status_filter = request.args.get('status', '').strip()
     page = request.args.get('page', 1, type=int)
 
-    query = Order.query.join(Company)
+    query = Order.query.filter_by(created_by=current_user.id).join(Company)
 
     if search:
         pattern = f'%{search}%'
@@ -97,8 +104,11 @@ def list_orders():
 def new_order():
     form = OrderForm()
     if form.validate_on_submit():
+        # Ensure company belongs to current user
+        Company.query.filter_by(id=form.company_id.data, created_by=current_user.id).first_or_404()
+
         order = Order(
-            order_id=_generate_order_id(),
+            order_id=_generate_order_id(current_user.id),
             company_id=form.company_id.data,
             garment_type=form.garment_type.data.strip(),
             machine_line=form.machine_line.data.strip() if form.machine_line.data else None,
@@ -130,7 +140,7 @@ def new_order():
 @orders_bp.route('/edit/<int:order_pk>', methods=['GET', 'POST'])
 @login_required
 def edit_order(order_pk):
-    order = Order.query.get_or_404(order_pk)
+    order = Order.query.filter_by(id=order_pk, created_by=current_user.id).first_or_404()
     form = OrderForm(obj=order)
 
     if form.validate_on_submit():
@@ -174,7 +184,7 @@ def edit_order(order_pk):
 def production_entry():
     form = ProductionForm()
     if form.validate_on_submit():
-        order = Order.query.get_or_404(form.order_id.data)
+        order = Order.query.filter_by(id=form.order_id.data, created_by=current_user.id).first_or_404()
         completed = form.quantity_completed.data or 0
         rejected = form.quantity_rejected.data or 0
 
@@ -192,7 +202,7 @@ def production_entry():
             return render_template('production.html', form=form)
 
         entry = ProductionEntry(
-            entry_id=_generate_entry_id(),
+            entry_id=_generate_entry_id(current_user.id),
             order_id=order.id,
             quantity_completed=completed,
             quantity_rejected=rejected,
@@ -232,7 +242,7 @@ def production_history():
     date_from = request.args.get('date_from', '', type=str)
     date_to = request.args.get('date_to', '', type=str)
 
-    query = ProductionEntry.query.join(Order).join(Company)
+    query = ProductionEntry.query.join(Order).join(Company).filter(Order.created_by == current_user.id)
 
     if company_filter:
         query = query.filter(Company.company_id == company_filter)
@@ -252,8 +262,8 @@ def production_history():
             pass
 
     entries = query.order_by(ProductionEntry.entry_date.desc()).paginate(page=page, per_page=20, error_out=False)
-    companies = Company.query.order_by(Company.company_name).all()
-    orders_list = Order.query.order_by(Order.order_id.desc()).all()
+    companies = Company.query.filter_by(created_by=current_user.id).order_by(Company.company_name).all()
+    orders_list = Order.query.filter_by(created_by=current_user.id).order_by(Order.order_id.desc()).all()
 
     return render_template('history.html', entries=entries, companies=companies, orders_list=orders_list,
                            company_filter=company_filter, order_filter=order_filter,
@@ -263,6 +273,6 @@ def production_history():
 @orders_bp.route('/view/<int:order_pk>')
 @login_required
 def view_order(order_pk):
-    order = Order.query.get_or_404(order_pk)
+    order = Order.query.filter_by(id=order_pk, created_by=current_user.id).first_or_404()
     entries = order.production_entries.all()
     return render_template('order_view.html', order=order, entries=entries)

@@ -76,16 +76,17 @@ def create_app():
     @app.route('/dashboard')
     @login_required
     def dashboard():
-        total_companies = Company.query.filter_by(is_active=True).count()
-        total_orders = Order.query.count()
-        active_orders = Order.query.filter(Order.status != 'Completed').count()
-        total_received = db.session.query(db.func.coalesce(db.func.sum(Order.total_quantity), 0)).scalar()
-        total_completed = db.session.query(db.func.coalesce(db.func.sum(Order.completed_quantity), 0)).scalar()
-        total_rejected = db.session.query(db.func.coalesce(db.func.sum(Order.rejected_quantity), 0)).scalar()
+        total_companies = Company.query.filter_by(created_by=current_user.id, is_active=True).count()
+        total_orders = Order.query.filter_by(created_by=current_user.id).count()
+        active_orders = Order.query.filter(Order.created_by == current_user.id, Order.status != 'Completed').count()
+        total_received = db.session.query(db.func.coalesce(db.func.sum(Order.total_quantity), 0)).filter(Order.created_by == current_user.id).scalar()
+        total_completed = db.session.query(db.func.coalesce(db.func.sum(Order.completed_quantity), 0)).filter(Order.created_by == current_user.id).scalar()
+        total_rejected = db.session.query(db.func.coalesce(db.func.sum(Order.rejected_quantity), 0)).filter(Order.created_by == current_user.id).scalar()
         total_remaining = total_received - total_completed - total_rejected
 
         recent_entries = (ProductionEntry.query
                           .join(Order).join(Company)
+                          .filter(Order.created_by == current_user.id)
                           .order_by(ProductionEntry.entry_date.desc())
                           .limit(10).all())
 
@@ -106,28 +107,36 @@ def create_app():
     @app.route('/reports')
     @login_required
     def reports():
-        companies = Company.query.order_by(Company.company_name).all()
-        orders_list = Order.query.order_by(Order.order_id.desc()).all()
+        companies = Company.query.filter_by(created_by=current_user.id).order_by(Company.company_name).all()
+        orders_list = Order.query.filter_by(created_by=current_user.id).order_by(Order.order_id.desc()).all()
         return render_template('reports.html', companies=companies, orders_list=orders_list)
 
     @app.route('/reports/download/<filetype>')
     @login_required
     def download_excel(filetype):
-        excel_dir = app.config['EXCEL_DIR']
-        file_map = {
-            'company': 'Company_History.xlsx',
-            'order': 'Order_History.xlsx',
-            'production': 'Production_History.xlsx',
-        }
-        filename = file_map.get(filetype)
-        if not filename:
+        from excel_service import export_user_history
+        wb = export_user_history(current_user.id, filetype)
+        if not wb:
             flash('Invalid file type.', 'danger')
             return redirect(url_for('reports'))
 
-        filepath = os.path.join(excel_dir, filename)
-        if not os.path.exists(filepath):
-            flash('File not found. No history records yet.', 'warning')
-            return redirect(url_for('reports'))
+        file_map = {
+            'company': f'Company_History_{current_user.username}.xlsx',
+            'order': f'Order_History_{current_user.username}.xlsx',
+            'production': f'Production_History_{current_user.username}.xlsx',
+        }
+        filename = file_map.get(filetype, 'Export.xlsx')
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        # Also save a copy to the Desktop Excel directory
+        try:
+            local_path = os.path.join(app.config['EXCEL_DIR'], filename)
+            wb.save(local_path)
+        except Exception:
+            pass
 
         audit = AuditLog(user_id=current_user.id, username=current_user.username,
                          action='REPORT_EXPORTED',
@@ -136,7 +145,8 @@ def create_app():
         db.session.add(audit)
         db.session.commit()
 
-        return send_file(filepath, as_attachment=True, download_name=filename)
+        return send_file(buf, as_attachment=True, download_name=filename,
+                         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
     @app.route('/reports/filtered')
     @login_required
@@ -162,6 +172,7 @@ def create_app():
 
         from excel_service import generate_filtered_report
         wb = generate_filtered_report(
+            user_id=current_user.id,
             company_id=company_id or None,
             order_id=order_id or None,
             date_from=date_from,

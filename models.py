@@ -42,9 +42,10 @@ class User(UserMixin, db.Model):
 class Company(db.Model):
     """Tailoring company model."""
     __tablename__ = 'companies'
+    __table_args__ = (db.UniqueConstraint('created_by', 'company_id', name='uq_user_company_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
-    company_id = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    company_id = db.Column(db.String(30), nullable=False, index=True)
     company_name = db.Column(db.String(200), nullable=False)
     contact_person = db.Column(db.String(150), nullable=True)
     phone = db.Column(db.String(20), nullable=True)
@@ -63,9 +64,10 @@ class Company(db.Model):
 class Order(db.Model):
     """Production order model."""
     __tablename__ = 'orders'
+    __table_args__ = (db.UniqueConstraint('created_by', 'order_id', name='uq_user_order_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.String(30), unique=True, nullable=False, index=True)
+    order_id = db.Column(db.String(30), nullable=False, index=True)
     company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     garment_type = db.Column(db.String(100), nullable=False)
     machine_line = db.Column(db.String(100), nullable=True)
@@ -101,9 +103,10 @@ class Order(db.Model):
 class ProductionEntry(db.Model):
     """Individual production entry for an order."""
     __tablename__ = 'production_entries'
+    __table_args__ = (db.UniqueConstraint('entered_by', 'entry_id', name='uq_user_entry_id'),)
 
     id = db.Column(db.Integer, primary_key=True)
-    entry_id = db.Column(db.String(30), unique=True, nullable=False, index=True)
+    entry_id = db.Column(db.String(30), nullable=False, index=True)
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
     quantity_completed = db.Column(db.Integer, nullable=False, default=0)
     quantity_rejected = db.Column(db.Integer, nullable=False, default=0)

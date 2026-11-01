@@ -208,7 +208,7 @@ def append_production_history(entry, order, username):
 # Report generation
 # ---------------------------------------------------------------------------
 
-def generate_filtered_report(company_id=None, order_id=None, date_from=None, date_to=None):
+def generate_filtered_report(user_id=None, company_id=None, order_id=None, date_from=None, date_to=None):
     """
     Generate a filtered Excel report workbook (in memory) from production history.
     Returns a Workbook object.
@@ -217,6 +217,8 @@ def generate_filtered_report(company_id=None, order_id=None, date_from=None, dat
 
     query = ProductionEntry.query.join(Order).join(Company)
 
+    if user_id:
+        query = query.filter(Order.created_by == user_id)
     if company_id:
         query = query.filter(Company.company_id == company_id)
     if order_id:
@@ -255,6 +257,98 @@ def generate_filtered_report(company_id=None, order_id=None, date_from=None, dat
             e.remarks or '',
             user.username if user else ''
         ])
+
+    for col_idx in range(1, len(headers) + 1):
+        ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = 18
+
+    return wb
+
+
+def export_user_history(user_id, filetype):
+    """
+    Export a user-isolated history Excel workbook.
+    Returns a Workbook object.
+    """
+    from models import Company, Order, ProductionEntry
+
+    wb = Workbook()
+    ws = wb.active
+
+    if filetype == 'company':
+        ws.title = 'Company History'
+        _style_headers(ws, COMPANY_HEADERS)
+        companies = Company.query.filter_by(created_by=user_id).order_by(Company.registration_date.desc()).all()
+        for idx, c in enumerate(companies, 1):
+            ws.append([
+                f'CH-{idx:04d}',
+                c.registration_date.strftime('%Y-%m-%d %H:%M') if c.registration_date else '',
+                'Active' if c.is_active else 'Inactive',
+                c.company_id,
+                c.company_name,
+                c.contact_person or '',
+                c.phone or '',
+                c.address or '',
+                c.remarks or '',
+                c.created_by
+            ])
+        headers = COMPANY_HEADERS
+
+    elif filetype == 'order':
+        ws.title = 'Order History'
+        _style_headers(ws, ORDER_HEADERS)
+        orders = Order.query.filter_by(created_by=user_id).order_by(Order.order_date.desc()).all()
+        for idx, o in enumerate(orders, 1):
+            ws.append([
+                f'OH-{idx:04d}',
+                o.order_date.strftime('%Y-%m-%d %H:%M') if o.order_date else '',
+                'Active',
+                o.order_id,
+                o.company.company_id if o.company else '',
+                o.company.company_name if o.company else '',
+                o.garment_type,
+                o.machine_line or '',
+                o.order_date.strftime('%Y-%m-%d') if o.order_date else '',
+                o.expected_delivery.strftime('%Y-%m-%d') if o.expected_delivery else '',
+                o.total_quantity,
+                o.completed_quantity,
+                o.rejected_quantity,
+                o.remaining_quantity,
+                o.status,
+                o.remarks or '',
+                o.created_by
+            ])
+        headers = ORDER_HEADERS
+
+    elif filetype == 'production':
+        ws.title = 'Production History'
+        _style_headers(ws, PRODUCTION_HEADERS)
+        entries = (ProductionEntry.query
+                   .join(Order)
+                   .filter(Order.created_by == user_id)
+                   .order_by(ProductionEntry.entry_date.desc()).all())
+        for idx, e in enumerate(entries, 1):
+            o = e.order
+            c = o.company if o else None
+            ws.append([
+                f'PH-{idx:04d}',
+                e.entry_date.strftime('%Y-%m-%d %H:%M') if e.entry_date else '',
+                e.entry_id,
+                o.order_id if o else '',
+                c.company_id if c else '',
+                c.company_name if c else '',
+                o.garment_type if o else '',
+                e.quantity_completed,
+                e.quantity_rejected,
+                o.completed_quantity if o else 0,
+                o.rejected_quantity if o else 0,
+                o.remaining_quantity if o else 0,
+                e.remarks or '',
+                e.user.username if e.user else ''
+            ])
+        headers = PRODUCTION_HEADERS
+
+    else:
+        return None
 
     for col_idx in range(1, len(headers) + 1):
         ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = 18
