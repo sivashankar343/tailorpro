@@ -112,8 +112,7 @@ def new_order():
             company_id=form.company_id.data,
             garment_type=form.garment_type.data.strip(),
             machine_line=form.machine_line.data.strip() if form.machine_line.data else None,
-            expected_delivery=datetime.combine(form.expected_delivery.data, datetime.min.time()).replace(
-                tzinfo=timezone.utc) if form.expected_delivery.data else None,
+            expected_delivery=datetime.combine(form.expected_delivery.data, datetime.min.time()) if form.expected_delivery.data else None,
             total_quantity=form.total_quantity.data,
             remarks=form.remarks.data.strip() if form.remarks.data else None,
             created_by=current_user.id
@@ -152,8 +151,7 @@ def edit_order(order_pk):
         order.company_id = form.company_id.data
         order.garment_type = form.garment_type.data.strip()
         order.machine_line = form.machine_line.data.strip() if form.machine_line.data else None
-        order.expected_delivery = datetime.combine(form.expected_delivery.data, datetime.min.time()).replace(
-            tzinfo=timezone.utc) if form.expected_delivery.data else None
+        order.expected_delivery = datetime.combine(form.expected_delivery.data, datetime.min.time()) if form.expected_delivery.data else None
         order.total_quantity = new_total
         order.remarks = form.remarks.data.strip() if form.remarks.data else None
         order.update_status()
@@ -201,11 +199,13 @@ def production_entry():
             )
             return render_template('production.html', form=form)
 
+        from models import get_current_ist_time
         entry = ProductionEntry(
             entry_id=_generate_entry_id(current_user.id),
             order_id=order.id,
             quantity_completed=completed,
             quantity_rejected=rejected,
+            entry_date=get_current_ist_time(),
             remarks=form.remarks.data.strip() if form.remarks.data else None,
             entered_by=current_user.id
         )
@@ -250,13 +250,13 @@ def production_history():
         query = query.filter(Order.order_id == order_filter)
     if date_from:
         try:
-            df = datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            df = datetime.strptime(date_from, '%Y-%m-%d')
             query = query.filter(ProductionEntry.entry_date >= df)
         except ValueError:
             pass
     if date_to:
         try:
-            dt = datetime.strptime(date_to, '%Y-%m-%d').replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+            dt = datetime.strptime(date_to, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
             query = query.filter(ProductionEntry.entry_date <= dt)
         except ValueError:
             pass

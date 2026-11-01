@@ -162,13 +162,13 @@ def create_app():
         date_to = None
         if date_from_str:
             try:
-                date_from = datetime.strptime(date_from_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+                date_from = datetime.strptime(date_from_str, '%Y-%m-%d')
             except ValueError:
                 pass
         if date_to_str:
             try:
                 date_to = datetime.strptime(date_to_str, '%Y-%m-%d').replace(
-                    hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                    hour=23, minute=59, second=59)
             except ValueError:
                 pass
 

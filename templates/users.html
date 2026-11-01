@@ -47,7 +47,7 @@
                             {% endif %}
                         </td>
                         <td>{{ u.created_at.strftime('%d %b %Y') if u.created_at else '—' }}</td>
-                        <td>{{ u.last_login.strftime('%d %b %Y, %H:%M') if u.last_login else 'Never' }}</td>
+                        <td>{{ u.last_login.strftime('%d %b %Y, %I:%M %p') if u.last_login else 'Never' }}</td>
                         <td class="text-end">
                             {% if u.id != current_user.id %}
                             <div class="btn-group btn-group-sm">

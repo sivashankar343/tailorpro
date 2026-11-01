@@ -91,7 +91,7 @@
                             {% endif %}
                         </td>
                         <td class="fw-semibold">{{ e.order.remaining_quantity }}</td>
-                        <td>{{ e.entry_date.strftime('%d %b %Y, %H:%M') if e.entry_date else '—' }}</td>
+                        <td>{{ e.entry_date.strftime('%d %b %Y, %I:%M %p') if e.entry_date else '—' }}</td>
                         <td>{{ e.user.username if e.user else '—' }}</td>
                         <td class="text-muted small">{{ e.remarks or '—' }}</td>
                     </tr>

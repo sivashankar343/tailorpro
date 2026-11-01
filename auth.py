@@ -8,7 +8,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
 
-from models import db, User, AuditLog
+from models import db, User, AuditLog, get_current_ist_time
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -115,7 +115,7 @@ def login():
         ).first()
 
         if user and user.is_locked():
-            remaining = (user.locked_until - datetime.now(timezone.utc)).seconds // 60 + 1
+            remaining = (user.locked_until - get_current_ist_time()).seconds // 60 + 1
             _log_audit('LOGIN_BLOCKED', f'Account locked: {login_id}', username=login_id)
             flash(f'Account is locked. Try again in {remaining} minute(s).', 'danger')
             return render_template('login.html', form=form)
@@ -124,7 +124,7 @@ def login():
             # Successful login
             user.failed_login_attempts = 0
             user.locked_until = None
-            user.last_login = datetime.now(timezone.utc)
+            user.last_login = get_current_ist_time()
             db.session.commit()
 
             login_user(user, remember=False)
@@ -143,7 +143,7 @@ def login():
                 max_attempts = current_app.config.get('MAX_LOGIN_ATTEMPTS', 5)
                 lockout_min = current_app.config.get('LOGIN_LOCKOUT_MINUTES', 15)
                 if user.failed_login_attempts >= max_attempts:
-                    user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=lockout_min)
+                    user.locked_until = get_current_ist_time() + timedelta(minutes=lockout_min)
                     flash(f'Too many failed attempts. Account locked for {lockout_min} minutes.', 'danger')
                 db.session.commit()
 

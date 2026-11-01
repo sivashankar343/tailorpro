@@ -1,7 +1,14 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+
+# Indian Standard Time (IST, UTC+05:30)
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def get_current_ist_time():
+    """Return current Indian Standard Time as naive datetime for database storage."""
+    return datetime.now(IST).replace(tzinfo=None)
 
 db = SQLAlchemy()
 
@@ -16,7 +23,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(150), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='staff')
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=get_current_ist_time)
     last_login = db.Column(db.DateTime, nullable=True)
     failed_login_attempts = db.Column(db.Integer, default=0)
     locked_until = db.Column(db.DateTime, nullable=True)
@@ -31,7 +38,7 @@ class User(UserMixin, db.Model):
         return self.role == 'admin'
 
     def is_locked(self):
-        if self.locked_until and self.locked_until > datetime.now(timezone.utc):
+        if self.locked_until and self.locked_until > get_current_ist_time():
             return True
         return False
 
@@ -50,7 +57,7 @@ class Company(db.Model):
     contact_person = db.Column(db.String(150), nullable=True)
     phone = db.Column(db.String(20), nullable=True)
     address = db.Column(db.Text, nullable=True)
-    registration_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    registration_date = db.Column(db.DateTime, default=get_current_ist_time)
     remarks = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -71,14 +78,14 @@ class Order(db.Model):
     company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
     garment_type = db.Column(db.String(100), nullable=False)
     machine_line = db.Column(db.String(100), nullable=True)
-    order_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    order_date = db.Column(db.DateTime, default=get_current_ist_time)
     expected_delivery = db.Column(db.DateTime, nullable=True)
     total_quantity = db.Column(db.Integer, nullable=False, default=0)
     completed_quantity = db.Column(db.Integer, nullable=False, default=0)
     rejected_quantity = db.Column(db.Integer, nullable=False, default=0)
     status = db.Column(db.String(30), nullable=False, default='Pending')
     remarks = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=get_current_ist_time)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     production_entries = db.relationship('ProductionEntry', backref='order', lazy='dynamic',
@@ -110,7 +117,7 @@ class ProductionEntry(db.Model):
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
     quantity_completed = db.Column(db.Integer, nullable=False, default=0)
     quantity_rejected = db.Column(db.Integer, nullable=False, default=0)
-    entry_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    entry_date = db.Column(db.DateTime, default=get_current_ist_time)
     remarks = db.Column(db.Text, nullable=True)
     entered_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
@@ -125,7 +132,7 @@ class AuditLog(db.Model):
     __tablename__ = 'audit_logs'
 
     id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    timestamp = db.Column(db.DateTime, default=get_current_ist_time)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     username = db.Column(db.String(80), nullable=True)
     action = db.Column(db.String(50), nullable=False)
@@ -181,7 +188,7 @@ class Invoice(db.Model):
     amount_in_words = db.Column(db.Text, nullable=True)
 
     terms_conditions = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, default=get_current_ist_time)
 
     items = db.relationship('InvoiceItem', backref='invoice', cascade='all, delete-orphan', lazy='joined',
                             order_by='InvoiceItem.item_index.asc()')

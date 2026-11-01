@@ -6,7 +6,13 @@ and provides download / reporting helpers.
 import os
 import shutil
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+# Indian Standard Time (IST, UTC+05:30)
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def _get_ist_str():
+    return datetime.now(IST).strftime('%d-%m-%Y %I:%M:%S %p')
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
@@ -135,7 +141,7 @@ def append_company_history(company, action, username):
             wb, filepath = _get_or_create_workbook('Company_History.xlsx', COMPANY_HEADERS)
             ws = wb.active
             entry_id = _next_entry_id(ws, 'CH')
-            now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+            now = _get_ist_str()
 
             ws.append([
                 entry_id, now, action,
@@ -156,7 +162,7 @@ def append_order_history(order, action, username):
             wb, filepath = _get_or_create_workbook('Order_History.xlsx', ORDER_HEADERS)
             ws = wb.active
             entry_id = _next_entry_id(ws, 'OH')
-            now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+            now = _get_ist_str()
 
             company = order.company if hasattr(order, 'company') and order.company else None
             company_id_str = company.company_id if company else ''
@@ -185,7 +191,7 @@ def append_production_history(entry, order, username):
             wb, filepath = _get_or_create_workbook('Production_History.xlsx', PRODUCTION_HEADERS)
             ws = wb.active
             eid = _next_entry_id(ws, 'PH')
-            now = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+            now = _get_ist_str()
 
             company = order.company if hasattr(order, 'company') and order.company else None
             company_id_str = company.company_id if company else ''
