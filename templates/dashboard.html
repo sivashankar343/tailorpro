@@ -59,7 +59,7 @@
 
 <!-- Secondary stats -->
 <div class="row g-4 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="info-card">
             <div class="info-icon text-primary"><i class="bi bi-box-seam-fill"></i></div>
             <div>
@@ -68,16 +68,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="info-card">
-            <div class="info-icon text-danger"><i class="bi bi-x-circle-fill"></i></div>
-            <div>
-                <div class="info-value">{{ total_rejected }}</div>
-                <div class="info-label">Total Rejected</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="info-card">
             <div class="info-icon text-success"><i class="bi bi-clipboard-data-fill"></i></div>
             <div>
@@ -92,18 +83,14 @@
 {% if total_received > 0 %}
 <div class="card content-card mb-4">
     <div class="card-body">
-        <h5 class="card-title mb-3"><i class="bi bi-bar-chart-fill"></i> Overall Production Progress</h5>
+        <h5 class="card-title mb-3"><i class="bi bi-bar-chart-fill"></i> Overall Return Progress</h5>
         {% set pct = ((total_completed / total_received) * 100) | round(1) %}
-        {% set rej_pct = ((total_rejected / total_received) * 100) | round(1) %}
         <div class="progress production-progress mb-2" style="height: 28px;">
             <div class="progress-bar bg-success" role="progressbar" style="width: {{ pct }}%"
                  aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">{{ pct }}% Completed</div>
-            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ rej_pct }}%"
-                 aria-valuenow="{{ rej_pct }}" aria-valuemin="0" aria-valuemax="100">{{ rej_pct }}% Rejected</div>
         </div>
         <div class="d-flex justify-content-between text-muted small">
             <span>Completed: {{ total_completed }}</span>
-            <span>Rejected: {{ total_rejected }}</span>
             <span>Remaining: {{ total_remaining }}</span>
         </div>
     </div>
