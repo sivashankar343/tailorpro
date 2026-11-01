@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-grid-1x2-fill"></i> Dashboard</h1>
+        <p class="page-subtitle">Welcome back, {{ current_user.full_name }}!</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('orders.new_order') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> New Order
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card stat-card-blue">
+            <div class="stat-icon"><i class="bi bi-building"></i></div>
+            <div class="stat-body">
+                <span class="stat-value">{{ total_companies }}</span>
+                <span class="stat-label">Total Companies</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card stat-card-amber">
+            <div class="stat-icon"><i class="bi bi-clock-fill"></i></div>
+            <div class="stat-body">
+                <span class="stat-value">{{ active_orders }}</span>
+                <span class="stat-label">Active Orders</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card stat-card-green">
+            <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="stat-body">
+                <span class="stat-value">{{ total_completed }}</span>
+                <span class="stat-label">Completed Garments</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card stat-card-red">
+            <div class="stat-icon"><i class="bi bi-exclamation-circle-fill"></i></div>
+            <div class="stat-body">
+                <span class="stat-value">{{ total_remaining }}</span>
+                <span class="stat-label">Remaining</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary stats -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="info-card">
+            <div class="info-icon text-primary"><i class="bi bi-box-seam-fill"></i></div>
+            <div>
+                <div class="info-value">{{ total_received }}</div>
+                <div class="info-label">Total Garments Received</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="info-card">
+            <div class="info-icon text-danger"><i class="bi bi-x-circle-fill"></i></div>
+            <div>
+                <div class="info-value">{{ total_rejected }}</div>
+                <div class="info-label">Total Rejected</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="info-card">
+            <div class="info-icon text-success"><i class="bi bi-clipboard-data-fill"></i></div>
+            <div>
+                <div class="info-value">{{ total_orders }}</div>
+                <div class="info-label">Total Orders</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress bar -->
+{% if total_received > 0 %}
+<div class="card content-card mb-4">
+    <div class="card-body">
+        <h5 class="card-title mb-3"><i class="bi bi-bar-chart-fill"></i> Overall Production Progress</h5>
+        {% set pct = ((total_completed / total_received) * 100) | round(1) %}
+        {% set rej_pct = ((total_rejected / total_received) * 100) | round(1) %}
+        <div class="progress production-progress mb-2" style="height: 28px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: {{ pct }}%"
+                 aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">{{ pct }}% Completed</div>
+            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ rej_pct }}%"
+                 aria-valuenow="{{ rej_pct }}" aria-valuemin="0" aria-valuemax="100">{{ rej_pct }}% Rejected</div>
+        </div>
+        <div class="d-flex justify-content-between text-muted small">
+            <span>Completed: {{ total_completed }}</span>
+            <span>Rejected: {{ total_rejected }}</span>
+            <span>Remaining: {{ total_remaining }}</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Production Entries -->
+<div class="card content-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Production Entries</h5>
+        <a href="{{ url_for('orders.production_history') }}" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_entries %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Entry ID</th>
+                        <th>Order</th>
+                        <th>Garment</th>
+                        <th>Completed</th>
+                        <th>Rejected</th>
+                        <th>Date</th>
+                        <th>By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in recent_entries %}
+                    <tr>
+                        <td><span class="badge bg-secondary">{{ entry.entry_id }}</span></td>
+                        <td>
+                            <a href="{{ url_for('orders.view_order', order_pk=entry.order.id) }}">
+                                {{ entry.order.order_id }}
+                            </a>
+                        </td>
+                        <td>{{ entry.order.garment_type }}</td>
+                        <td><span class="text-success fw-semibold">{{ entry.quantity_completed }}</span></td>
+                        <td>
+                            {% if entry.quantity_rejected > 0 %}
+                            <span class="text-danger fw-semibold">{{ entry.quantity_rejected }}</span>
+                            {% else %}
+                            <span class="text-muted">0</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ entry.entry_date.strftime('%d %b %Y, %H:%M') if entry.entry_date else '—' }}</td>
+                        <td>{{ entry.user.username if entry.user else '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p>No production entries yet.</p>
+            <a href="{{ url_for('orders.production_entry') }}" class="btn btn-primary btn-sm">Record Production</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

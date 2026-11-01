@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-people-fill"></i> User Management</h1>
+        <p class="page-subtitle">Manage user accounts and roles (Admin only)</p>
+    </div>
+</div>
+
+<div class="card content-card">
+    <div class="card-body p-0">
+        {% if users %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Full Name</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Registered</th>
+                        <th>Last Login</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td>{{ u.id }}</td>
+                        <td class="fw-semibold">{{ u.full_name }}</td>
+                        <td>{{ u.username }}</td>
+                        <td>{{ u.email }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'warning text-dark' if u.role == 'admin' else 'info' }}">
+                                {{ u.role | capitalize }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if u.is_locked() %}
+                            <span class="badge bg-danger"><i class="bi bi-lock-fill"></i> Locked</span>
+                            {% else %}
+                            <span class="badge bg-success"><i class="bi bi-unlock-fill"></i> Active</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ u.created_at.strftime('%d %b %Y') if u.created_at else '—' }}</td>
+                        <td>{{ u.last_login.strftime('%d %b %Y, %H:%M') if u.last_login else 'Never' }}</td>
+                        <td class="text-end">
+                            {% if u.id != current_user.id %}
+                            <div class="btn-group btn-group-sm">
+                                <form method="POST" action="{{ url_for('toggle_role', user_id=u.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-{{ 'warning' if u.role == 'staff' else 'info' }}"
+                                            title="Toggle role to {{ 'admin' if u.role == 'staff' else 'staff' }}">
+                                        <i class="bi bi-arrow-repeat"></i> {{ 'Make Admin' if u.role == 'staff' else 'Make Staff' }}
+                                    </button>
+                                </form>
+                                {% if u.is_locked() %}
+                                <form method="POST" action="{{ url_for('unlock_user', user_id=u.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-success" title="Unlock user">
+                                        <i class="bi bi-unlock"></i> Unlock
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="text-muted small">Current user</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-people"></i>
+            <p>No users found.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

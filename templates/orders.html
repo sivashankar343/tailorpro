@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Orders{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-box-seam-fill"></i> Orders</h1>
+        <p class="page-subtitle">View and manage all production orders</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('orders.new_order') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> New Order
+        </a>
+    </div>
+</div>
+
+<!-- Search & filter -->
+<div class="card content-card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('orders.list_orders') }}" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control" placeholder="Order ID, company, garment type..."
+                           value="{{ search }}" id="orderSearch">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select" id="statusFilter">
+                    <option value="">All Statuses</option>
+                    <option value="Pending" {{ 'selected' if status_filter == 'Pending' else '' }}>Pending</option>
+                    <option value="In Progress" {{ 'selected' if status_filter == 'In Progress' else '' }}>In Progress</option>
+                    <option value="Completed" {{ 'selected' if status_filter == 'Completed' else '' }}>Completed</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-fill">Filter</button>
+                {% if search or status_filter %}
+                <a href="{{ url_for('orders.list_orders') }}" class="btn btn-outline-secondary">Clear</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Orders table -->
+<div class="card content-card">
+    <div class="card-body p-0">
+        {% if orders.items %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Company</th>
+                        <th>Garment Type</th>
+                        <th>Total Qty</th>
+                        <th>Completed</th>
+                        <th>Rejected</th>
+                        <th>Remaining</th>
+                        <th>Status</th>
+                        <th>Order Date</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in orders.items %}
+                    <tr>
+                        <td><span class="badge bg-primary-subtle text-primary">{{ o.order_id }}</span></td>
+                        <td>{{ o.company.company_name if o.company else '—' }}</td>
+                        <td>{{ o.garment_type }}</td>
+                        <td>{{ o.total_quantity }}</td>
+                        <td><span class="text-success fw-semibold">{{ o.completed_quantity }}</span></td>
+                        <td>
+                            {% if o.rejected_quantity > 0 %}
+                            <span class="text-danger fw-semibold">{{ o.rejected_quantity }}</span>
+                            {% else %}
+                            <span class="text-muted">0</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold">{{ o.remaining_quantity }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if o.status == 'Completed' else 'warning text-dark' if o.status == 'In Progress' else 'secondary' }}">
+                                {{ o.status }}
+                            </span>
+                        </td>
+                        <td>{{ o.order_date.strftime('%d %b %Y') if o.order_date else '—' }}</td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('orders.view_order', order_pk=o.id) }}" class="btn btn-outline-primary" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('orders.edit_order', order_pk=o.id) }}" class="btn btn-outline-secondary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if orders.pages > 1 %}
+        <div class="d-flex justify-content-center p-3">
+            <nav aria-label="Order pagination">
+                <ul class="pagination mb-0">
+                    {% if orders.has_prev %}
+                    <li class="page-item"><a class="page-link" href="?page={{ orders.prev_num }}&search={{ search }}&status={{ status_filter }}">‹</a></li>
+                    {% endif %}
+                    {% for p in orders.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                    <li class="page-item {{ 'active' if p == orders.page else '' }}">
+                        <a class="page-link" href="?page={{ p }}&search={{ search }}&status={{ status_filter }}">{{ p }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    {% if orders.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ orders.next_num }}&search={{ search }}&status={{ status_filter }}">›</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-box-seam"></i>
+            <p>No orders found.</p>
+            <a href="{{ url_for('orders.new_order') }}" class="btn btn-primary btn-sm">Create Order</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

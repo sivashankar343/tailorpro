@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit Order' if editing else 'New Order' }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="bi bi-{{ 'pencil-square' if editing else 'plus-circle-fill' }}"></i>
+            {{ 'Edit Order' if editing else 'New Production Order' }}
+        </h1>
+        <p class="page-subtitle">
+            {% if editing %}
+            Editing {{ order.order_id }}
+            {% else %}
+            Create a new garment production order
+            {% endif %}
+        </p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('orders.list_orders') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Orders
+        </a>
+    </div>
+</div>
+
+<div class="card content-card">
+    <div class="card-body">
+        <form method="POST" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="companyId" class="form-label">Company <span class="text-danger">*</span></label>
+                    {{ form.company_id(class="form-select", id="companyId") }}
+                    {% for error in form.company_id.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="col-md-6">
+                    <label for="garmentType" class="form-label">Garment Type <span class="text-danger">*</span></label>
+                    {{ form.garment_type(class="form-control", id="garmentType", placeholder="e.g., Shirts, Trousers, Dresses") }}
+                    {% for error in form.garment_type.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="col-md-6">
+                    <label for="machineLine" class="form-label">Machine / Production Line</label>
+                    {{ form.machine_line(class="form-control", id="machineLine", placeholder="Optional") }}
+                    {% for error in form.machine_line.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="col-md-6">
+                    <label for="expectedDelivery" class="form-label">Expected Delivery Date</label>
+                    {{ form.expected_delivery(class="form-control", id="expectedDelivery", type="date") }}
+                    {% for error in form.expected_delivery.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="col-md-6">
+                    <label for="totalQuantity" class="form-label">Total Quantity Received <span class="text-danger">*</span></label>
+                    {{ form.total_quantity(class="form-control", id="totalQuantity", placeholder="Enter quantity", min=1) }}
+                    {% for error in form.total_quantity.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                {% if editing %}
+                <div class="col-md-6">
+                    <div class="alert alert-info mb-0">
+                        <strong>Current Status:</strong> {{ order.status }}<br>
+                        Completed: {{ order.completed_quantity }} | Rejected: {{ order.rejected_quantity }} | Remaining: {{ order.remaining_quantity }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="col-12">
+                    <label for="remarks" class="form-label">Remarks</label>
+                    {{ form.remarks(class="form-control", id="remarks", placeholder="Additional notes...", rows=2) }}
+                    {% for error in form.remarks.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> {{ 'Update Order' if editing else 'Create Order' }}
+                </button>
+                <a href="{{ url_for('orders.list_orders') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{
+  "name": "TailorPro - Tailoring Production",
+  "short_name": "TailorPro",
+  "description": "Professional Tailoring & Garment Production Management System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1A252F",
+  "theme_color": "#2C3E50",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%232C3E50'/><path d='M35 30 L65 70 M65 30 L35 70' stroke='%233498DB' stroke-width='8' stroke-linecap='round'/><circle cx='35' cy='70' r='8' fill='none' stroke='%233498DB' stroke-width='5'/><circle cx='65' cy='70' r='8' fill='none' stroke='%233498DB' stroke-width='5'/></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

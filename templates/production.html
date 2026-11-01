@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Production Entry{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-gear-wide-connected"></i> Production Entry</h1>
+        <p class="page-subtitle">Record completed and rejected garments for an order</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card content-card">
+            <div class="card-body">
+                <form method="POST" novalidate id="productionForm">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <label for="orderId" class="form-label">Select Order <span class="text-danger">*</span></label>
+                        {{ form.order_id(class="form-select", id="orderId") }}
+                        {% for error in form.order_id.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="qtyCompleted" class="form-label">Quantity Completed <span class="text-danger">*</span></label>
+                            {{ form.quantity_completed(class="form-control", id="qtyCompleted", placeholder="0", min=0) }}
+                            {% for error in form.quantity_completed.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="qtyRejected" class="form-label">Quantity Rejected</label>
+                            {{ form.quantity_rejected(class="form-control", id="qtyRejected", placeholder="0", min=0) }}
+                            {% for error in form.quantity_rejected.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label for="entryRemarks" class="form-label">Remarks</label>
+                        {{ form.remarks(class="form-control", id="entryRemarks", placeholder="Optional notes...", rows=2) }}
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary" id="submitProduction">
+                            <i class="bi bi-check-lg"></i> Record Production
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card content-card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> How It Works</h5>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li class="mb-2">Select an active order from the dropdown</li>
+                    <li class="mb-2">Enter completed and/or rejected quantities</li>
+                    <li class="mb-2">Total cannot exceed remaining quantity</li>
+                    <li class="mb-2">Status updates automatically</li>
+                    <li class="mb-0">Entry is recorded in Excel history</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="card content-card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-calculator"></i> Formula</h5>
+            </div>
+            <div class="card-body">
+                <div class="p-3 bg-light rounded text-center">
+                    <code class="fs-6">Remaining = Total − Completed − Rejected</code>
+                </div>
+                <p class="text-muted mt-2 mb-0 small">
+                    Rejected items are tracked separately and never counted as completed.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

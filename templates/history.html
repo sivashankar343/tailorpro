@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Production History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-clock-history"></i> Production History</h1>
+        <p class="page-subtitle">View all production entries with filters</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card content-card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('orders.production_history') }}" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Company</label>
+                <select name="company" class="form-select" id="historyCompany">
+                    <option value="">All Companies</option>
+                    {% for c in companies %}
+                    <option value="{{ c.company_id }}" {{ 'selected' if company_filter == c.company_id else '' }}>
+                        {{ c.company_id }} — {{ c.company_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Order</label>
+                <select name="order" class="form-select" id="historyOrder">
+                    <option value="">All Orders</option>
+                    {% for o in orders_list %}
+                    <option value="{{ o.order_id }}" {{ 'selected' if order_filter == o.order_id else '' }}>
+                        {{ o.order_id }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">From</label>
+                <input type="date" name="date_from" class="form-control" value="{{ date_from }}" id="dateFrom">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">To</label>
+                <input type="date" name="date_to" class="form-control" value="{{ date_to }}" id="dateTo">
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-fill">Filter</button>
+                {% if company_filter or order_filter or date_from or date_to %}
+                <a href="{{ url_for('orders.production_history') }}" class="btn btn-outline-secondary">Clear</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- History table -->
+<div class="card content-card">
+    <div class="card-body p-0">
+        {% if entries.items %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Entry ID</th>
+                        <th>Order</th>
+                        <th>Company</th>
+                        <th>Garment</th>
+                        <th>Completed</th>
+                        <th>Rejected</th>
+                        <th>Order Remaining</th>
+                        <th>Date</th>
+                        <th>By</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in entries.items %}
+                    <tr>
+                        <td><span class="badge bg-secondary">{{ e.entry_id }}</span></td>
+                        <td>
+                            <a href="{{ url_for('orders.view_order', order_pk=e.order.id) }}">{{ e.order.order_id }}</a>
+                        </td>
+                        <td>{{ e.order.company.company_name if e.order.company else '—' }}</td>
+                        <td>{{ e.order.garment_type }}</td>
+                        <td><span class="text-success fw-semibold">+{{ e.quantity_completed }}</span></td>
+                        <td>
+                            {% if e.quantity_rejected > 0 %}
+                            <span class="text-danger fw-semibold">+{{ e.quantity_rejected }}</span>
+                            {% else %}
+                            <span class="text-muted">0</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-semibold">{{ e.order.remaining_quantity }}</td>
+                        <td>{{ e.entry_date.strftime('%d %b %Y, %H:%M') if e.entry_date else '—' }}</td>
+                        <td>{{ e.user.username if e.user else '—' }}</td>
+                        <td class="text-muted small">{{ e.remarks or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if entries.pages > 1 %}
+        <div class="d-flex justify-content-center p-3">
+            <nav aria-label="History pagination">
+                <ul class="pagination mb-0">
+                    {% if entries.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ entries.prev_num }}&company={{ company_filter }}&order={{ order_filter }}&date_from={{ date_from }}&date_to={{ date_to }}">‹</a>
+                    </li>
+                    {% endif %}
+                    {% for p in entries.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                    <li class="page-item {{ 'active' if p == entries.page else '' }}">
+                        <a class="page-link" href="?page={{ p }}&company={{ company_filter }}&order={{ order_filter }}&date_from={{ date_from }}&date_to={{ date_to }}">{{ p }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    {% if entries.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ entries.next_num }}&company={{ company_filter }}&order={{ order_filter }}&date_from={{ date_from }}&date_to={{ date_to }}">›</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p>No production entries found.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

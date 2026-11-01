@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Create Account{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-container">
+        <!-- Decorative left panel -->
+        <div class="auth-hero">
+            <div class="hero-content">
+                <div class="hero-icon">
+                    <i class="bi bi-scissors"></i>
+                </div>
+                <h1>TailorPro</h1>
+                <p class="hero-tagline">Professional Tailoring &amp; Garment Production Management</p>
+                <div class="hero-features">
+                    <div class="hero-feature"><i class="bi bi-shield-check"></i> Secure Account Management</div>
+                    <div class="hero-feature"><i class="bi bi-database-check"></i> Persistent Data Storage</div>
+                    <div class="hero-feature"><i class="bi bi-file-earmark-excel"></i> Excel History & Export</div>
+                    <div class="hero-feature"><i class="bi bi-graph-up-arrow"></i> Business Analytics</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration form -->
+        <div class="auth-form-panel">
+            <div class="auth-form-wrapper">
+                <div class="auth-form-header">
+                    <h2>Create Account</h2>
+                    <p>Fill in your details to get started</p>
+                </div>
+
+                <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="form-floating mb-3">
+                        {{ form.full_name(class="form-control", id="fullName", placeholder="Full Name") }}
+                        <label for="fullName"><i class="bi bi-person-badge"></i> Full Name</label>
+                        {% for error in form.full_name.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        {{ form.username(class="form-control", id="regUsername", placeholder="Username") }}
+                        <label for="regUsername"><i class="bi bi-at"></i> Username</label>
+                        {% for error in form.username.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        {{ form.email(class="form-control", id="regEmail", placeholder="Email") }}
+                        <label for="regEmail"><i class="bi bi-envelope"></i> Email Address</label>
+                        {% for error in form.email.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        {{ form.password(class="form-control", id="regPassword", placeholder="Password") }}
+                        <label for="regPassword"><i class="bi bi-lock"></i> Password</label>
+                        <small class="form-text text-muted">Minimum 8 characters</small>
+                        {% for error in form.password.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-floating mb-4">
+                        {{ form.confirm_password(class="form-control", id="regConfirm", placeholder="Confirm") }}
+                        <label for="regConfirm"><i class="bi bi-lock-fill"></i> Confirm Password</label>
+                        {% for error in form.confirm_password.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-auth w-100">
+                        <i class="bi bi-person-plus"></i> Create Account
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign in here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

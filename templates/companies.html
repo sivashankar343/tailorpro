@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Companies{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-building"></i> Company Management</h1>
+        <p class="page-subtitle">Manage your tailoring partner companies</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('companies.add_company') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Add Company
+        </a>
+    </div>
+</div>
+
+<!-- Search bar -->
+<div class="card content-card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('companies.list_companies') }}" class="row g-3 align-items-end">
+            <div class="col-md-8">
+                <label class="form-label">Search Companies</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control" placeholder="Search by name, ID, contact, or phone..."
+                           value="{{ search }}" id="companySearch">
+                </div>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-fill">Search</button>
+                {% if search %}
+                <a href="{{ url_for('companies.list_companies') }}" class="btn btn-outline-secondary">Clear</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Companies table -->
+<div class="card content-card">
+    <div class="card-body p-0">
+        {% if companies.items %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Company ID</th>
+                        <th>Company Name</th>
+                        <th>Contact Person</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Registered</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in companies.items %}
+                    <tr>
+                        <td><span class="badge bg-primary-subtle text-primary">{{ c.company_id }}</span></td>
+                        <td class="fw-semibold">{{ c.company_name }}</td>
+                        <td>{{ c.contact_person or '—' }}</td>
+                        <td>{{ c.phone or '—' }}</td>
+                        <td>
+                            {% if c.is_active %}
+                            <span class="badge bg-success-subtle text-success"><i class="bi bi-circle-fill"></i> Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary"><i class="bi bi-circle-fill"></i> Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ c.registration_date.strftime('%d %b %Y') if c.registration_date else '—' }}</td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('companies.view_company', company_pk=c.id) }}" class="btn btn-outline-primary" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('companies.edit_company', company_pk=c.id) }}" class="btn btn-outline-secondary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('companies.toggle_company', company_pk=c.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-{{ 'warning' if c.is_active else 'success' }}"
+                                            title="{{ 'Deactivate' if c.is_active else 'Activate' }}">
+                                        <i class="bi bi-{{ 'pause-circle' if c.is_active else 'play-circle' }}"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if companies.pages > 1 %}
+        <div class="d-flex justify-content-center p-3">
+            <nav aria-label="Company pagination">
+                <ul class="pagination mb-0">
+                    {% if companies.has_prev %}
+                    <li class="page-item"><a class="page-link" href="?page={{ companies.prev_num }}&search={{ search }}">‹</a></li>
+                    {% endif %}
+                    {% for p in companies.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                    <li class="page-item {{ 'active' if p == companies.page else '' }}">
+                        <a class="page-link" href="?page={{ p }}&search={{ search }}">{{ p }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    {% if companies.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ companies.next_num }}&search={{ search }}">›</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-building"></i>
+            <p>No companies found.</p>
+            <a href="{{ url_for('companies.add_company') }}" class="btn btn-primary btn-sm">Add Company</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

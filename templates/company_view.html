@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}{{ company.company_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-building"></i> {{ company.company_name }}</h1>
+        <p class="page-subtitle">{{ company.company_id }} — Registered {{ company.registration_date.strftime('%d %b %Y') if company.registration_date else '—' }}</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('companies.edit_company', company_pk=company.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        <a href="{{ url_for('companies.list_companies') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+
+<!-- Company details -->
+<div class="card content-card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="detail-group">
+                    <span class="detail-label">Contact Person</span>
+                    <span class="detail-value">{{ company.contact_person or '—' }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="detail-group">
+                    <span class="detail-label">Phone</span>
+                    <span class="detail-value">{{ company.phone or '—' }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="detail-group">
+                    <span class="detail-label">Address</span>
+                    <span class="detail-value">{{ company.address or '—' }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="detail-group">
+                    <span class="detail-label">Status</span>
+                    <span class="detail-value">
+                        {% if company.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            {% if company.remarks %}
+            <div class="col-12">
+                <div class="detail-group">
+                    <span class="detail-label">Remarks</span>
+                    <span class="detail-value">{{ company.remarks }}</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Company orders -->
+<div class="card content-card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-box-seam"></i> Orders for {{ company.company_name }}</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Garment Type</th>
+                        <th>Total Qty</th>
+                        <th>Completed</th>
+                        <th>Rejected</th>
+                        <th>Remaining</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in orders %}
+                    <tr>
+                        <td><span class="badge bg-primary-subtle text-primary">{{ o.order_id }}</span></td>
+                        <td>{{ o.garment_type }}</td>
+                        <td>{{ o.total_quantity }}</td>
+                        <td class="text-success fw-semibold">{{ o.completed_quantity }}</td>
+                        <td class="text-danger fw-semibold">{{ o.rejected_quantity }}</td>
+                        <td class="fw-semibold">{{ o.remaining_quantity }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if o.status == 'Completed' else 'warning' if o.status == 'In Progress' else 'secondary' }}">
+                                {{ o.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('orders.view_order', order_pk=o.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p>No orders for this company yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

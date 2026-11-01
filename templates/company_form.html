@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit Company' if editing else 'Add Company' }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="bi bi-{{ 'pencil-square' if editing else 'plus-circle' }}"></i>
+            {{ 'Edit Company' if editing else 'Add New Company' }}
+        </h1>
+        <p class="page-subtitle">
+            {% if editing %}
+            Editing {{ company.company_id }} — {{ company.company_name }}
+            {% else %}
+            Register a new tailoring company
+            {% endif %}
+        </p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('companies.list_companies') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Companies
+        </a>
+    </div>
+</div>
+
+<div class="card content-card">
+    <div class="card-body">
+        <form method="POST" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="companyName" class="form-label">Company Name <span class="text-danger">*</span></label>
+                    {{ form.company_name(class="form-control", id="companyName", placeholder="Enter company name") }}
+                    {% for error in form.company_name.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="contactPerson" class="form-label">Contact Person</label>
+                    {{ form.contact_person(class="form-control", id="contactPerson", placeholder="Contact person name") }}
+                    {% for error in form.contact_person.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="phone" class="form-label">Phone Number</label>
+                    {{ form.phone(class="form-control", id="phone", placeholder="Phone number") }}
+                    {% for error in form.phone.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="address" class="form-label">Address</label>
+                    {{ form.address(class="form-control", id="address", placeholder="Company address", rows=2) }}
+                    {% for error in form.address.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-12">
+                    <label for="remarks" class="form-label">Remarks</label>
+                    {{ form.remarks(class="form-control", id="remarks", placeholder="Additional notes...", rows=2) }}
+                    {% for error in form.remarks.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> {{ 'Update Company' if editing else 'Add Company' }}
+                </button>
+                <a href="{{ url_for('companies.list_companies') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
