@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    container_name: tailorpro-app
+    restart: always
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./instance:/app/instance
+      - ./excel_data:/app/excel_data
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=tailorpro-production-secure-key-2026
