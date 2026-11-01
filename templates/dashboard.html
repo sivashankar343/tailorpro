@@ -115,6 +115,7 @@
                         <th>Return Completed</th>
                         <th>Date</th>
                         <th>By</th>
+                        <th class="text-end">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -130,6 +131,33 @@
                         <td><span class="text-success fw-semibold">{{ entry.quantity_completed }}</span></td>
                         <td>{{ entry.entry_date.strftime('%d %b %Y, %I:%M %p') if entry.entry_date else '—' }}</td>
                         <td>{{ entry.user.username if entry.user else '—' }}</td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="Delete Return Entry" data-bs-toggle="modal" data-bs-target="#delDashEntryModal{{ entry.id }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+
+                            <!-- Delete Return Entry Modal -->
+                            <div class="modal fade" id="delDashEntryModal{{ entry.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered modal-sm">
+                                    <div class="modal-content">
+                                        <div class="modal-header py-2">
+                                            <h6 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle"></i> Delete Entry?</h6>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body text-start small">
+                                            Delete return entry <strong>{{ entry.entry_id }}</strong> (+{{ entry.quantity_completed }}) for order <strong>{{ entry.order.order_id }}</strong>?
+                                        </div>
+                                        <div class="modal-footer py-2">
+                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <form method="POST" action="{{ url_for('orders.delete_entry', entry_pk=entry.id) }}" style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

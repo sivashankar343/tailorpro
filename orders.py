@@ -276,3 +276,70 @@ def view_order(order_pk):
     order = Order.query.filter_by(id=order_pk, created_by=current_user.id).first_or_404()
     entries = order.production_entries.all()
     return render_template('order_view.html', order=order, entries=entries)
+
+
+@orders_bp.route('/delete/<int:order_pk>', methods=['GET', 'POST'])
+@login_required
+def delete_order(order_pk):
+    """Delete an order and all its return entries."""
+    order = Order.query.filter_by(id=order_pk, created_by=current_user.id).first_or_404()
+    order_id = order.order_id
+
+    # Delete child entries
+    ProductionEntry.query.filter_by(order_id=order.id).delete()
+    db.session.delete(order)
+    db.session.commit()
+
+    audit = AuditLog(
+        user_id=current_user.id,
+        username=current_user.username,
+        action='ORDER_DELETED',
+        details=f'Order {order_id} deleted',
+        ip_address=request.remote_addr
+    )
+    db.session.add(audit)
+    db.session.commit()
+
+    flash(f'Order {order_id} has been permanently deleted.', 'success')
+    return redirect(url_for('orders.list_orders'))
+
+
+@orders_bp.route('/entry/delete/<int:entry_pk>', methods=['GET', 'POST'])
+@login_required
+def delete_entry(entry_pk):
+    """Delete a return entry and update order completed and remaining counts."""
+    entry = ProductionEntry.query.join(Order).filter(
+        ProductionEntry.id == entry_pk,
+        Order.created_by == current_user.id
+    ).first_or_404()
+
+    order = entry.order
+    entry_id = entry.entry_id
+    qty_completed = entry.quantity_completed
+    qty_rejected = entry.quantity_rejected
+
+    # Decrement quantities on order
+    order.completed_quantity = max(0, order.completed_quantity - qty_completed)
+    order.rejected_quantity = max(0, order.rejected_quantity - qty_rejected)
+    order.update_status()
+
+    db.session.delete(entry)
+    db.session.commit()
+
+    audit = AuditLog(
+        user_id=current_user.id,
+        username=current_user.username,
+        action='RETURN_ENTRY_DELETED',
+        details=f'Deleted return entry {entry_id} (+{qty_completed}) for order {order.order_id}',
+        ip_address=request.remote_addr
+    )
+    db.session.add(audit)
+    db.session.commit()
+
+    flash(f'Return entry {entry_id} deleted successfully. Order {order.order_id} quantities updated.', 'success')
+
+    next_url = request.referrer
+    if next_url and ('history' in next_url or 'view' in next_url or 'dashboard' in next_url):
+        return redirect(next_url)
+    return redirect(url_for('orders.production_history'))
+

@@ -70,6 +70,7 @@
                         <th>Date</th>
                         <th>By</th>
                         <th>Remarks</th>
+                        <th class="text-end">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -86,6 +87,33 @@
                         <td>{{ e.entry_date.strftime('%d %b %Y, %I:%M %p') if e.entry_date else '—' }}</td>
                         <td>{{ e.user.username if e.user else '—' }}</td>
                         <td class="text-muted small">{{ e.remarks or '—' }}</td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="Delete Return Entry" data-bs-toggle="modal" data-bs-target="#delHistoryEntryModal{{ e.id }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+
+                            <!-- Delete Return Entry Modal -->
+                            <div class="modal fade" id="delHistoryEntryModal{{ e.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered modal-sm">
+                                    <div class="modal-content">
+                                        <div class="modal-header py-2">
+                                            <h6 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle"></i> Delete Entry?</h6>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body text-start small">
+                                            Delete return entry <strong>{{ e.entry_id }}</strong> (+{{ e.quantity_completed }}) for order <strong>{{ e.order.order_id }}</strong>?
+                                        </div>
+                                        <div class="modal-footer py-2">
+                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <form method="POST" action="{{ url_for('orders.delete_entry', entry_pk=e.id) }}" style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

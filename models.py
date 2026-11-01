@@ -89,6 +89,7 @@ class Order(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     production_entries = db.relationship('ProductionEntry', backref='order', lazy='dynamic',
+                                         cascade='all, delete-orphan',
                                          order_by='ProductionEntry.entry_date.desc()')
 
     @property
