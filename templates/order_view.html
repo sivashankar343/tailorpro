@@ -149,8 +149,7 @@
                 <thead>
                     <tr>
                         <th>Entry ID</th>
-                        <th>Completed</th>
-                        <th>Rejected</th>
+                        <th>Return Completed</th>
                         <th>Date</th>
                         <th>By</th>
                         <th>Remarks</th>
@@ -161,7 +160,6 @@
                     <tr>
                         <td><span class="badge bg-secondary">{{ e.entry_id }}</span></td>
                         <td class="text-success fw-semibold">+{{ e.quantity_completed }}</td>
-                        <td class="text-danger fw-semibold">{{ '+' ~ e.quantity_rejected if e.quantity_rejected > 0 else '—' }}</td>
                         <td>{{ e.entry_date.strftime('%d %b %Y, %I:%M %p') if e.entry_date else '—' }}</td>
                         <td>{{ e.user.username if e.user else '—' }}</td>
                         <td class="text-muted">{{ e.remarks or '—' }}</td>

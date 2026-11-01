@@ -65,8 +65,7 @@
                         <th>Order</th>
                         <th>Company</th>
                         <th>Garment</th>
-                        <th>Completed</th>
-                        <th>Rejected</th>
+                        <th>Return Completed</th>
                         <th>Order Remaining</th>
                         <th>Date</th>
                         <th>By</th>
@@ -83,13 +82,6 @@
                         <td>{{ e.order.company.company_name if e.order.company else '—' }}</td>
                         <td>{{ e.order.garment_type }}</td>
                         <td><span class="text-success fw-semibold">+{{ e.quantity_completed }}</span></td>
-                        <td>
-                            {% if e.quantity_rejected > 0 %}
-                            <span class="text-danger fw-semibold">+{{ e.quantity_rejected }}</span>
-                            {% else %}
-                            <span class="text-muted">0</span>
-                            {% endif %}
-                        </td>
                         <td class="fw-semibold">{{ e.order.remaining_quantity }}</td>
                         <td>{{ e.entry_date.strftime('%d %b %Y, %I:%M %p') if e.entry_date else '—' }}</td>
                         <td>{{ e.user.username if e.user else '—' }}</td>

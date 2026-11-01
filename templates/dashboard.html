@@ -64,7 +64,7 @@
             <div class="info-icon text-primary"><i class="bi bi-box-seam-fill"></i></div>
             <div>
                 <div class="info-value">{{ total_received }}</div>
-                <div class="info-label">Total Garments Received</div>
+                <div class="info-label">Total Garments</div>
             </div>
         </div>
     </div>
@@ -112,8 +112,7 @@
                         <th>Entry ID</th>
                         <th>Order</th>
                         <th>Garment</th>
-                        <th>Completed</th>
-                        <th>Rejected</th>
+                        <th>Return Completed</th>
                         <th>Date</th>
                         <th>By</th>
                     </tr>
@@ -129,13 +128,6 @@
                         </td>
                         <td>{{ entry.order.garment_type }}</td>
                         <td><span class="text-success fw-semibold">{{ entry.quantity_completed }}</span></td>
-                        <td>
-                            {% if entry.quantity_rejected > 0 %}
-                            <span class="text-danger fw-semibold">{{ entry.quantity_rejected }}</span>
-                            {% else %}
-                            <span class="text-muted">0</span>
-                            {% endif %}
-                        </td>
                         <td>{{ entry.entry_date.strftime('%d %b %Y, %I:%M %p') if entry.entry_date else '—' }}</td>
                         <td>{{ entry.user.username if entry.user else '—' }}</td>
                     </tr>
