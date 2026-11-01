@@ -7,7 +7,10 @@
         <h1 class="page-title"><i class="bi bi-grid-1x2-fill"></i> Dashboard</h1>
         <p class="page-subtitle">Welcome back, {{ current_user.full_name }}!</p>
     </div>
-    <div class="header-actions">
+    <div class="header-actions d-flex gap-2">
+        <a href="{{ url_for('billing.new_invoice') }}" class="btn btn-outline-primary">
+            <i class="bi bi-receipt-cutoff"></i> New Bill / Invoice
+        </a>
         <a href="{{ url_for('orders.new_order') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg"></i> New Order
         </a>

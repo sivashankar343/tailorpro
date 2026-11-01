@@ -1,0 +1,560 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit Tax Invoice #' + invoice.invoice_number if invoice else 'New Tax Invoice' }} — TailorPro{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="page-title mb-1">
+            <i class="bi bi-receipt-cutoff text-primary me-2"></i>
+            {{ 'Edit Tax Invoice #' + invoice.invoice_number if invoice else 'Generate Tax Invoice' }}
+        </h2>
+        <p class="text-muted mb-0">Create GST compliant tax invoices with manual product, rate, GST and invoice controls.</p>
+    </div>
+    <a href="{{ url_for('billing.list_invoices') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back to Invoices
+    </a>
+</div>
+
+<form method="POST" id="invoiceForm" class="needs-validation" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <!-- Section 1: Basic Invoice Information -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-header bg-light py-2">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-hash me-1"></i> Invoice Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Invoice Number <span class="text-danger">*</span></label>
+                            <input type="text" name="invoice_number" class="form-control" 
+                                   value="{{ invoice.invoice_number if invoice else suggested_inv_no }}" 
+                                   placeholder="e.g. 49, INV-001" required>
+                            <small class="text-muted">Enter manual invoice number</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Invoice Date <span class="text-danger">*</span></label>
+                            <input type="date" name="invoice_date" class="form-control" 
+                                   value="{{ today_str }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Supply State</label>
+                            <input type="text" name="state" class="form-control" 
+                                   value="{{ invoice.state if invoice else 'Tamil Nadu' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Reverse Charge</label>
+                            <select name="reverse_charge" class="form-select">
+                                <option value="NO" {% if invoice and invoice.reverse_charge == 'NO' %}selected{% endif %}>NO</option>
+                                <option value="YES" {% if invoice and invoice.reverse_charge == 'YES' %}selected{% endif %}>YES</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Seller Information -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-header bg-light py-2">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-shop me-1"></i> Supplier / Seller Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Seller Company Name <span class="text-danger">*</span></label>
+                        <input type="text" name="seller_name" class="form-control" 
+                               value="{{ invoice.seller_name if invoice else default_seller_name }}" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Seller Address</label>
+                        <textarea name="seller_address" class="form-control" rows="2">{{ invoice.seller_address if invoice else default_seller_addr }}</textarea>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Seller GSTIN</label>
+                            <input type="text" name="seller_gstin" class="form-control" 
+                                   value="{{ invoice.seller_gstin if invoice else default_seller_gstin }}" placeholder="e.g. 33BCJPS4966H1Z5">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">State Code</label>
+                            <input type="text" name="seller_state_code" class="form-control" 
+                                   value="{{ invoice.seller_state_code if invoice else default_seller_state_code }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Buyer & Consignee Information -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-person-badge me-1"></i> Receiver (Billed to) & Consignee (Shipped to)</h6>
+            {% if companies %}
+            <div class="d-flex align-items-center gap-2">
+                <span class="small text-muted">Quick fill from company:</span>
+                <select id="quickCompanySelect" class="form-select form-select-sm" style="width: 220px;">
+                    <option value="">-- Choose Company --</option>
+                    {% for comp in companies %}
+                    <option value="{{ comp.id }}">{{ comp.company_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Billed to -->
+                <div class="col-lg-6">
+                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-2">Details of Receiver | Billed to</h6>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Buyer / Client Name <span class="text-danger">*</span></label>
+                        <input type="text" id="buyer_name" name="buyer_name" class="form-control" 
+                               value="{{ invoice.buyer_name if invoice else '' }}" placeholder="e.g. JUBILEE TEX" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Address</label>
+                        <textarea id="buyer_address" name="buyer_address" class="form-control" rows="2" 
+                                  placeholder="Address, City, Pincode">{{ invoice.buyer_address if invoice else '' }}</textarea>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">GSTIN</label>
+                            <input type="text" id="buyer_gstin" name="buyer_gstin" class="form-control" 
+                                   value="{{ invoice.buyer_gstin if invoice else '' }}" placeholder="e.g. 33AACFJ0472F1ZU">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">State Code</label>
+                            <input type="text" id="buyer_state_code" name="buyer_state_code" class="form-control" 
+                                   value="{{ invoice.buyer_state_code if invoice else '33' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">State</label>
+                            <input type="text" id="buyer_state" name="buyer_state" class="form-control" 
+                                   value="{{ invoice.buyer_state if invoice else 'Tamil Nadu' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shipped to -->
+                <div class="col-lg-6">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                        <h6 class="fw-bold text-dark mb-0">Details of Consignee | Shipped to</h6>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="same_as_billing" name="same_as_billing" 
+                                   {% if not invoice or (invoice.ship_name == invoice.buyer_name and invoice.ship_address == invoice.buyer_address) %}checked{% endif %}>
+                            <label class="form-check-label small fw-bold" for="same_as_billing">Same as Billed to</label>
+                        </div>
+                    </div>
+                    <div id="consigneeFields" style="{% if not invoice or (invoice.ship_name == invoice.buyer_name and invoice.ship_address == invoice.buyer_address) %}display: none;{% endif %}">
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">Consignee Name</label>
+                            <input type="text" id="ship_name" name="ship_name" class="form-control" 
+                                   value="{{ invoice.ship_name if invoice else '' }}">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">Shipping Address</label>
+                            <textarea id="ship_address" name="ship_address" class="form-control" rows="2">{{ invoice.ship_address if invoice else '' }}</textarea>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">GSTIN</label>
+                                <input type="text" id="ship_gstin" name="ship_gstin" class="form-control" 
+                                       value="{{ invoice.ship_gstin if invoice else '' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">State Code</label>
+                                <input type="text" id="ship_state_code" name="ship_state_code" class="form-control" 
+                                       value="{{ invoice.ship_state_code if invoice else '33' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">State</label>
+                                <input type="text" id="ship_state" name="ship_state" class="form-control" 
+                                       value="{{ invoice.ship_state if invoice else 'Tamil Nadu' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="sameAsNotice" class="alert alert-light border text-muted small p-3 text-center" 
+                         style="{% if invoice and not (invoice.ship_name == invoice.buyer_name and invoice.ship_address == invoice.buyer_address) %}display: none;{% endif %}">
+                        <i class="bi bi-info-circle me-1"></i> Shipping details are identical to billing details.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Dynamic Line Items -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-box-seam me-1"></i> Products / Materials / Service Items</h6>
+            <button type="button" class="btn btn-sm btn-primary" id="addRowBtn">
+                <i class="bi bi-plus-lg me-1"></i> Add Item
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0" id="itemsTable">
+                    <thead class="table-light text-center small">
+                        <tr>
+                            <th style="width: 4%;">#</th>
+                            <th style="width: 38%;">Name of Product / Material <span class="text-danger">*</span></th>
+                            <th style="width: 8%;">QTY <span class="text-danger">*</span></th>
+                            <th style="width: 8%;">Unit</th>
+                            <th style="width: 10%;">Rate / Price (₹) <span class="text-danger">*</span></th>
+                            <th style="width: 11%;">Taxable Value (₹)</th>
+                            <th style="width: 10%;">GST %</th>
+                            <th style="width: 11%;">Total (₹)</th>
+                            <th style="width: 4%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsTbody">
+                        {% if invoice and invoice.items %}
+                            {% for item in invoice.items %}
+                            <tr class="item-row">
+                                <td class="text-center row-num fw-bold">{{ loop.index }}</td>
+                                <td>
+                                    <textarea name="product_name[]" class="form-control form-control-sm item-desc" rows="2" 
+                                              placeholder="e.g. Machine rental 22/9/26 to 7/10/26" required>{{ item.product_name }}</textarea>
+                                </td>
+                                <td>
+                                    <input type="number" step="any" name="quantity[]" class="form-control form-control-sm text-end item-qty" 
+                                           value="{{ '%g' | format(item.quantity) }}" required>
+                                </td>
+                                <td>
+                                    <input type="text" name="unit[]" class="form-control form-control-sm text-center item-unit" 
+                                           value="{{ item.unit }}" placeholder="Pcs/Nos">
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" name="rate[]" class="form-control form-control-sm text-end item-rate" 
+                                           value="{{ '%.2f' | format(item.rate) }}" required>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm text-end bg-light item-taxable" 
+                                           value="{{ '%.2f' | format(item.taxable_value) }}" readonly>
+                                </td>
+                                <td>
+                                    <select name="gst_rate[]" class="form-select form-select-sm item-gst">
+                                        <option value="0" {% if (item.cgst_rate + item.sgst_rate) == 0 %}selected{% endif %}>0%</option>
+                                        <option value="5" {% if (item.cgst_rate + item.sgst_rate) == 5 %}selected{% endif %}>5% (2.5+2.5)</option>
+                                        <option value="12" {% if (item.cgst_rate + item.sgst_rate) == 12 %}selected{% endif %}>12% (6+6)</option>
+                                        <option value="18" {% if (item.cgst_rate + item.sgst_rate) == 18 %}selected{% endif %}>18% (9+9)</option>
+                                        <option value="28" {% if (item.cgst_rate + item.sgst_rate) == 28 %}selected{% endif %}>28% (14+14)</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm text-end fw-bold bg-light item-total" 
+                                           value="{{ '%.2f' | format(item.total_amount) }}" readonly>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Remove Item">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Default 1 blank row -->
+                            <tr class="item-row">
+                                <td class="text-center row-num fw-bold">1</td>
+                                <td>
+                                    <textarea name="product_name[]" class="form-control form-control-sm item-desc" rows="2" 
+                                              placeholder="e.g. Machine rental&#10;22/9/26 to 7/10/26 =14 less 2day" required></textarea>
+                                </td>
+                                <td>
+                                    <input type="number" step="any" name="quantity[]" class="form-control form-control-sm text-end item-qty" 
+                                           value="1" required>
+                                </td>
+                                <td>
+                                    <input type="text" name="unit[]" class="form-control form-control-sm text-center item-unit" 
+                                           value="" placeholder="Nos / Pcs">
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" name="rate[]" class="form-control form-control-sm text-end item-rate" 
+                                           value="0.00" required>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm text-end bg-light item-taxable" 
+                                           value="0.00" readonly>
+                                </td>
+                                <td>
+                                    <select name="gst_rate[]" class="form-select form-select-sm item-gst">
+                                        <option value="18" selected>18% (9+9)</option>
+                                        <option value="12">12% (6+6)</option>
+                                        <option value="5">5% (2.5+2.5)</option>
+                                        <option value="0">0%</option>
+                                        <option value="28">28% (14+14)</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm text-end fw-bold bg-light item-total" 
+                                           value="0.00" readonly>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Remove Item">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 5: Summaries & Terms -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-light py-2">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-chat-square-text me-1"></i> Terms & Amount Preview</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Terms and Conditions</label>
+                        <textarea name="terms_conditions" class="form-control" rows="3">{{ invoice.terms_conditions if invoice else '1. This is an electronically generated document. 2. All disputes are subject to Tiruppur jurisdiction.' }}</textarea>
+                    </div>
+                    <div class="p-3 bg-light rounded border">
+                        <div class="small fw-bold text-muted mb-1">TOTAL INVOICE AMOUNT IN WORDS:</div>
+                        <div id="liveWords" class="fw-bold text-primary">
+                            {{ invoice.amount_in_words if invoice else 'Zero Rupees Only /-' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-light py-2">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-calculator me-1"></i> Invoice Calculations</h6>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table mb-0 align-middle">
+                        <tr>
+                            <td class="ps-3 text-muted">Total Quantity:</td>
+                            <td class="text-end pe-3 fw-bold" id="summaryQty">0</td>
+                        </tr>
+                        <tr>
+                            <td class="ps-3 text-muted">Total Taxable Value:</td>
+                            <td class="text-end pe-3 fw-bold" id="summaryTaxable">₹ 0.00</td>
+                        </tr>
+                        <tr>
+                            <td class="ps-3 text-muted">Add : CGST:</td>
+                            <td class="text-end pe-3 text-secondary" id="summaryCgst">₹ 0.00</td>
+                        </tr>
+                        <tr>
+                            <td class="ps-3 text-muted">Add : SGST:</td>
+                            <td class="text-end pe-3 text-secondary" id="summarySgst">₹ 0.00</td>
+                        </tr>
+                        <tr>
+                            <td class="ps-3 text-muted">Total Tax Amount:</td>
+                            <td class="text-end pe-3 fw-bold text-info" id="summaryTax">₹ 0.00</td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td class="ps-3 fw-bold fs-6">GRAND TOTAL:</td>
+                            <td class="text-end pe-3 fw-bold fs-5 text-primary" id="summaryGrandTotal">₹ 0.00</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Controls -->
+    <div class="d-flex justify-content-end gap-2 pb-5">
+        <a href="{{ url_for('billing.list_invoices') }}" class="btn btn-light px-4">Cancel</a>
+        <button type="submit" class="btn btn-primary px-5 fw-bold">
+            <i class="bi bi-check2-circle me-1"></i> {{ 'Save Invoice' if invoice else 'Generate Tax Invoice' }}
+        </button>
+    </div>
+</form>
+
+<script>
+document-ready = function() {
+    const tableBody = document.getElementById('itemsTbody');
+    const addRowBtn = document.getElementById('addRowBtn');
+    const sameAsBillingCheck = document.getElementById('same_as_billing');
+    const consigneeFields = document.getElementById('consigneeFields');
+    const sameAsNotice = document.getElementById('sameAsNotice');
+    const quickCompanySelect = document.getElementById('quickCompanySelect');
+
+    // Toggle Consignee
+    if (sameAsBillingCheck) {
+        sameAsBillingCheck.addEventListener('change', function() {
+            if (this.checked) {
+                consigneeFields.style.display = 'none';
+                sameAsNotice.style.display = 'block';
+            } else {
+                consigneeFields.style.display = 'block';
+                sameAsNotice.style.display = 'none';
+            }
+        });
+    }
+
+    // Quick populate company
+    if (quickCompanySelect) {
+        quickCompanySelect.addEventListener('change', function() {
+            const compId = this.value;
+            if (!compId) return;
+            fetch(`/invoices/api/company/${compId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.company_name) {
+                        document.getElementById('buyer_name').value = data.company_name;
+                        document.getElementById('buyer_address').value = data.address;
+                    }
+                })
+                .catch(e => console.error(e));
+        });
+    }
+
+    // Dynamic calculations
+    function calculateTotals() {
+        const rows = document.querySelectorAll('.item-row');
+        let totalQty = 0;
+        let totalTaxable = 0;
+        let totalCgst = 0;
+        let totalSgst = 0;
+        let grandTotal = 0;
+
+        rows.forEach((row, index) => {
+            row.querySelector('.row-num').textContent = index + 1;
+            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+            const rate = parseFloat(row.querySelector('.item-rate').value) || 0;
+            const gst = parseFloat(row.querySelector('.item-gst').value) || 0;
+
+            const taxable = Math.round((qty * rate) * 100) / 100;
+            const halfGst = gst / 2;
+            const cgst = Math.round((taxable * (halfGst / 100)) * 100) / 100;
+            const sgst = Math.round((taxable * (halfGst / 100)) * 100) / 100;
+            const itemTotal = Math.round((taxable + cgst + sgst) * 100) / 100;
+
+            row.querySelector('.item-taxable').value = taxable.toFixed(2);
+            row.querySelector('.item-total').value = itemTotal.toFixed(2);
+
+            totalQty += qty;
+            totalTaxable += taxable;
+            totalCgst += cgst;
+            totalSgst += sgst;
+            grandTotal += itemTotal;
+        });
+
+        document.getElementById('summaryQty').textContent = totalQty;
+        document.getElementById('summaryTaxable').textContent = '₹ ' + totalTaxable.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('summaryCgst').textContent = '₹ ' + totalCgst.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('summarySgst').textContent = '₹ ' + totalSgst.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('summaryTax').textContent = '₹ ' + (totalCgst + totalSgst).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('summaryGrandTotal').textContent = '₹ ' + grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        // Update live words in JS
+        document.getElementById('liveWords').textContent = inWords(Math.round(grandTotal));
+    }
+
+    // Number to words converter in JS
+    function inWords(num) {
+        if (!num || num === 0) return 'Zero Rupees Only /-';
+        const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
+        const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
+
+        function convert(n) {
+            if (n < 20) return a[n];
+            const digit = n % 10;
+            return b[Math.floor(n / 10)] + (digit ? ' ' + a[digit] : '');
+        }
+
+        let str = '';
+        const crore = Math.floor(num / 10000000);
+        num %= 10000000;
+        const lakh = Math.floor(num / 100000);
+        num %= 100000;
+        const thousand = Math.floor(num / 1000);
+        num %= 1000;
+        const hundred = Math.floor(num / 100);
+        num %= 100;
+
+        if (crore) str += convert(crore) + 'Crore ';
+        if (lakh) str += convert(lakh) + 'Lakh ';
+        if (thousand) str += convert(thousand) + 'Thousand ';
+        if (hundred) str += convert(hundred) + 'Hundred ';
+        if (num) str += convert(num);
+
+        return (str.trim() + ' Rupees Only /-').replace(/\s+/g, ' ');
+    }
+
+    // Add Row
+    addRowBtn.addEventListener('click', function() {
+        const tr = document.createElement('tr');
+        tr.className = 'item-row';
+        tr.innerHTML = `
+            <td class="text-center row-num fw-bold"></td>
+            <td>
+                <textarea name="product_name[]" class="form-control form-control-sm item-desc" rows="2" 
+                          placeholder="e.g. Machine rental" required></textarea>
+            </td>
+            <td>
+                <input type="number" step="any" name="quantity[]" class="form-control form-control-sm text-end item-qty" 
+                       value="1" required>
+            </td>
+            <td>
+                <input type="text" name="unit[]" class="form-control form-control-sm text-center item-unit" 
+                       value="" placeholder="Nos / Pcs">
+            </td>
+            <td>
+                <input type="number" step="0.01" name="rate[]" class="form-control form-control-sm text-end item-rate" 
+                       value="0.00" required>
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm text-end bg-light item-taxable" 
+                       value="0.00" readonly>
+            </td>
+            <td>
+                <select name="gst_rate[]" class="form-select form-select-sm item-gst">
+                    <option value="18" selected>18% (9+9)</option>
+                    <option value="12">12% (6+6)</option>
+                    <option value="5">5% (2.5+2.5)</option>
+                    <option value="0">0%</option>
+                    <option value="28">28% (14+14)</option>
+                </select>
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm text-end fw-bold bg-light item-total" 
+                       value="0.00" readonly>
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Remove Item">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(tr);
+        attachRowEvents(tr);
+        calculateTotals();
+    });
+
+    function attachRowEvents(row) {
+        row.querySelectorAll('input, select, textarea').forEach(el => {
+            el.addEventListener('input', calculateTotals);
+            el.addEventListener('change', calculateTotals);
+        });
+
+        row.querySelector('.remove-row-btn').addEventListener('click', function() {
+            if (document.querySelectorAll('.item-row').length > 1) {
+                row.remove();
+                calculateTotals();
+            } else {
+                alert('An invoice must have at least one product row.');
+            }
+        });
+    }
+
+    document.querySelectorAll('.item-row').forEach(attachRowEvents);
+    calculateTotals();
+};
+document.addEventListener('DOMContentLoaded', document-ready);
+</script>
+{% endblock %}

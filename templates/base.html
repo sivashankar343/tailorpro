@@ -76,6 +76,11 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ url_for('billing.list_invoices') }}" class="nav-link {% if request.endpoint and 'billing' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-receipt-cutoff"></i><span>Tax Invoices (Bills)</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ url_for('reports') }}" class="nav-link {% if request.endpoint == 'reports' %}active{% endif %}">
                     <i class="bi bi-file-earmark-spreadsheet-fill"></i><span>Reports & Export</span>
                 </a>

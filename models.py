@@ -134,3 +134,85 @@ class AuditLog(db.Model):
 
     def __repr__(self):
         return f'<AuditLog {self.action} by {self.username}>'
+
+
+class Invoice(db.Model):
+    """GST Tax Invoice model with user tenant isolation."""
+    __tablename__ = 'invoices'
+    __table_args__ = (db.UniqueConstraint('created_by', 'invoice_number', name='uq_user_invoice_num'),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    invoice_number = db.Column(db.String(50), nullable=False, index=True)
+    invoice_date = db.Column(db.Date, nullable=False)
+    state = db.Column(db.String(100), default='Tamil Nadu')
+    reverse_charge = db.Column(db.String(10), default='NO')
+
+    # Seller details
+    seller_name = db.Column(db.String(255), nullable=False)
+    seller_address = db.Column(db.Text, nullable=True)
+    seller_gstin = db.Column(db.String(50), nullable=True)
+    seller_state_code = db.Column(db.String(20), default='33')
+
+    # Buyer / Billed to details
+    buyer_name = db.Column(db.String(255), nullable=False)
+    buyer_address = db.Column(db.Text, nullable=True)
+    buyer_gstin = db.Column(db.String(50), nullable=True)
+    buyer_state_code = db.Column(db.String(20), default='33')
+    buyer_state = db.Column(db.String(100), default='Tamil Nadu')
+
+    # Consignee / Shipped to details
+    ship_name = db.Column(db.String(255), nullable=True)
+    ship_address = db.Column(db.Text, nullable=True)
+    ship_gstin = db.Column(db.String(50), nullable=True)
+    ship_state_code = db.Column(db.String(20), default='33')
+    ship_state = db.Column(db.String(100), default='Tamil Nadu')
+
+    # Totals
+    total_qty = db.Column(db.Float, default=0.0)
+    total_taxable_value = db.Column(db.Float, default=0.0)
+    total_cgst = db.Column(db.Float, default=0.0)
+    total_sgst = db.Column(db.Float, default=0.0)
+    total_igst = db.Column(db.Float, default=0.0)
+    total_tax = db.Column(db.Float, default=0.0)
+    grand_total = db.Column(db.Float, default=0.0)
+    balance_due = db.Column(db.Float, default=0.0)
+    amount_in_words = db.Column(db.Text, nullable=True)
+
+    terms_conditions = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    items = db.relationship('InvoiceItem', backref='invoice', cascade='all, delete-orphan', lazy='joined',
+                            order_by='InvoiceItem.item_index.asc()')
+
+    def __repr__(self):
+        return f'<Invoice {self.invoice_number} by User {self.created_by}>'
+
+
+class InvoiceItem(db.Model):
+    """Individual line item in an invoice."""
+    __tablename__ = 'invoice_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('invoices.id', ondelete='CASCADE'), nullable=False)
+    item_index = db.Column(db.Integer, default=1)
+
+    product_name = db.Column(db.Text, nullable=False)
+    quantity = db.Column(db.Float, default=1.0)
+    unit = db.Column(db.String(50), default='')
+    rate = db.Column(db.Float, default=0.0)
+    taxable_value = db.Column(db.Float, default=0.0)
+
+    cgst_rate = db.Column(db.Float, default=9.0)
+    cgst_amount = db.Column(db.Float, default=0.0)
+    sgst_rate = db.Column(db.Float, default=9.0)
+    sgst_amount = db.Column(db.Float, default=0.0)
+    igst_rate = db.Column(db.Float, default=0.0)
+    igst_amount = db.Column(db.Float, default=0.0)
+
+    total_amount = db.Column(db.Float, default=0.0)
+
+    def __repr__(self):
+        return f'<InvoiceItem {self.product_name} of Invoice {self.invoice_id}>'
+

@@ -42,10 +42,12 @@ def create_app():
     from auth import auth_bp
     from companies import companies_bp
     from orders import orders_bp
+    from billing import billing_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(companies_bp)
     app.register_blueprint(orders_bp)
+    app.register_blueprint(billing_bp)
 
     # Create tables & initialise Excel workbooks
     with app.app_context():
