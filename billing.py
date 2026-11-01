@@ -189,6 +189,9 @@ def new_invoice():
         quantities = request.form.getlist('quantity[]')
         units = request.form.getlist('unit[]')
         rates = request.form.getlist('rate[]')
+        taxable_values = request.form.getlist('taxable_value[]')
+        cgst_rates = request.form.getlist('cgst_rate[]')
+        sgst_rates = request.form.getlist('sgst_rate[]')
         gst_rates = request.form.getlist('gst_rate[]')
 
         total_qty = 0.0
@@ -215,14 +218,35 @@ def new_invoice():
                 rate = 0.0
 
             try:
-                gst_pct = float(gst_rates[idx]) if idx < len(gst_rates) and gst_rates[idx] else 18.0
+                if idx < len(taxable_values) and taxable_values[idx]:
+                    taxable_val = float(taxable_values[idx])
+                else:
+                    taxable_val = round(qty * rate, 2)
             except ValueError:
-                gst_pct = 18.0
+                taxable_val = round(qty * rate, 2)
 
-            taxable_val = round(qty * rate, 2)
-            half_tax = gst_pct / 2.0
-            cgst_amt = round(taxable_val * (half_tax / 100.0), 2)
-            sgst_amt = round(taxable_val * (half_tax / 100.0), 2)
+            try:
+                if idx < len(cgst_rates) and cgst_rates[idx] != '':
+                    cgst_pct = float(cgst_rates[idx])
+                elif idx < len(gst_rates) and gst_rates[idx]:
+                    cgst_pct = float(gst_rates[idx]) / 2.0
+                else:
+                    cgst_pct = 9.0
+            except ValueError:
+                cgst_pct = 9.0
+
+            try:
+                if idx < len(sgst_rates) and sgst_rates[idx] != '':
+                    sgst_pct = float(sgst_rates[idx])
+                elif idx < len(gst_rates) and gst_rates[idx]:
+                    sgst_pct = float(gst_rates[idx]) / 2.0
+                else:
+                    sgst_pct = 9.0
+            except ValueError:
+                sgst_pct = 9.0
+
+            cgst_amt = round(taxable_val * (cgst_pct / 100.0), 2)
+            sgst_amt = round(taxable_val * (sgst_pct / 100.0), 2)
             item_total = round(taxable_val + cgst_amt + sgst_amt, 2)
 
             item = InvoiceItem(
@@ -233,9 +257,9 @@ def new_invoice():
                 unit=unit,
                 rate=rate,
                 taxable_value=taxable_val,
-                cgst_rate=half_tax,
+                cgst_rate=cgst_pct,
                 cgst_amount=cgst_amt,
-                sgst_rate=half_tax,
+                sgst_rate=sgst_pct,
                 sgst_amount=sgst_amt,
                 total_amount=item_total
             )
@@ -345,6 +369,9 @@ def edit_invoice(id):
         quantities = request.form.getlist('quantity[]')
         units = request.form.getlist('unit[]')
         rates = request.form.getlist('rate[]')
+        taxable_values = request.form.getlist('taxable_value[]')
+        cgst_rates = request.form.getlist('cgst_rate[]')
+        sgst_rates = request.form.getlist('sgst_rate[]')
         gst_rates = request.form.getlist('gst_rate[]')
 
         total_qty = 0.0
@@ -371,14 +398,35 @@ def edit_invoice(id):
                 rate = 0.0
 
             try:
-                gst_pct = float(gst_rates[idx]) if idx < len(gst_rates) and gst_rates[idx] else 18.0
+                if idx < len(taxable_values) and taxable_values[idx]:
+                    taxable_val = float(taxable_values[idx])
+                else:
+                    taxable_val = round(qty * rate, 2)
             except ValueError:
-                gst_pct = 18.0
+                taxable_val = round(qty * rate, 2)
 
-            taxable_val = round(qty * rate, 2)
-            half_tax = gst_pct / 2.0
-            cgst_amt = round(taxable_val * (half_tax / 100.0), 2)
-            sgst_amt = round(taxable_val * (half_tax / 100.0), 2)
+            try:
+                if idx < len(cgst_rates) and cgst_rates[idx] != '':
+                    cgst_pct = float(cgst_rates[idx])
+                elif idx < len(gst_rates) and gst_rates[idx]:
+                    cgst_pct = float(gst_rates[idx]) / 2.0
+                else:
+                    cgst_pct = 9.0
+            except ValueError:
+                cgst_pct = 9.0
+
+            try:
+                if idx < len(sgst_rates) and sgst_rates[idx] != '':
+                    sgst_pct = float(sgst_rates[idx])
+                elif idx < len(gst_rates) and gst_rates[idx]:
+                    sgst_pct = float(gst_rates[idx]) / 2.0
+                else:
+                    sgst_pct = 9.0
+            except ValueError:
+                sgst_pct = 9.0
+
+            cgst_amt = round(taxable_val * (cgst_pct / 100.0), 2)
+            sgst_amt = round(taxable_val * (sgst_pct / 100.0), 2)
             item_total = round(taxable_val + cgst_amt + sgst_amt, 2)
 
             item = InvoiceItem(
@@ -389,9 +437,9 @@ def edit_invoice(id):
                 unit=unit,
                 rate=rate,
                 taxable_value=taxable_val,
-                cgst_rate=half_tax,
+                cgst_rate=cgst_pct,
                 cgst_amount=cgst_amt,
-                sgst_rate=half_tax,
+                sgst_rate=sgst_pct,
                 sgst_amount=sgst_amt,
                 total_amount=item_total
             )

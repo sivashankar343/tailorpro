@@ -9,7 +9,7 @@
             <i class="bi bi-receipt-cutoff text-primary me-2"></i>
             {{ 'Edit Tax Invoice #' + invoice.invoice_number if invoice else 'Generate Tax Invoice' }}
         </h2>
-        <p class="text-muted mb-0">Create GST compliant tax invoices with manual product, rate, GST and invoice controls.</p>
+        <p class="text-muted mb-0">Full manual control over Rates, Taxable Value, CGST %, SGST %, and automated total calculations.</p>
     </div>
     <a href="{{ url_for('billing.list_invoices') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Back to Invoices
@@ -187,28 +187,43 @@
         </div>
     </div>
 
-    <!-- Section 4: Dynamic Line Items -->
+    <!-- Section 4: Dynamic Line Items with CGST, SGST & Taxable Value manual/auto controls -->
     <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+        <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-box-seam me-1"></i> Products / Materials / Service Items</h6>
-            <button type="button" class="btn btn-sm btn-primary" id="addRowBtn">
-                <i class="bi bi-plus-lg me-1"></i> Add Item
-            </button>
+            <div class="d-flex align-items-center gap-1 flex-wrap">
+                <span class="small text-muted fw-bold me-1">Quick GST:</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 set-all-gst" data-cgst="0" data-sgst="0">0%</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 set-all-gst" data-cgst="2.5" data-sgst="2.5">5% (2.5+2.5)</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 set-all-gst" data-cgst="6" data-sgst="6">12% (6+6)</button>
+                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 set-all-gst" data-cgst="9" data-sgst="9">18% (9+9)</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 set-all-gst" data-cgst="14" data-sgst="14">28% (14+14)</button>
+                <button type="button" class="btn btn-sm btn-primary ms-2" id="addRowBtn">
+                    <i class="bi bi-plus-lg me-1"></i> Add Item
+                </button>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover align-middle mb-0" id="itemsTable">
                     <thead class="table-light text-center small">
                         <tr>
-                            <th style="width: 4%;">#</th>
-                            <th style="width: 38%;">Name of Product / Material <span class="text-danger">*</span></th>
-                            <th style="width: 8%;">QTY <span class="text-danger">*</span></th>
-                            <th style="width: 8%;">Unit</th>
-                            <th style="width: 10%;">Rate / Price (₹) <span class="text-danger">*</span></th>
-                            <th style="width: 11%;">Taxable Value (₹)</th>
-                            <th style="width: 10%;">GST %</th>
-                            <th style="width: 11%;">Total (₹)</th>
-                            <th style="width: 4%;"></th>
+                            <th rowspan="2" style="width: 3%;">#</th>
+                            <th rowspan="2" style="width: 25%;">Name of Product / Material <span class="text-danger">*</span></th>
+                            <th rowspan="2" style="width: 7%;">QTY <span class="text-danger">*</span></th>
+                            <th rowspan="2" style="width: 6%;">Unit</th>
+                            <th rowspan="2" style="width: 9%;">Rate (₹) <span class="text-danger">*</span></th>
+                            <th rowspan="2" style="width: 11%;">Taxable Value (₹)</th>
+                            <th colspan="2" style="width: 16%;">CGST</th>
+                            <th colspan="2" style="width: 16%;">SGST</th>
+                            <th rowspan="2" style="width: 12%;">Total (₹)</th>
+                            <th rowspan="2" style="width: 3%;"></th>
+                        </tr>
+                        <tr>
+                            <th style="font-size: 11px; width: 7%;">Rate %</th>
+                            <th style="font-size: 11px; width: 9%;">Amount (₹)</th>
+                            <th style="font-size: 11px; width: 7%;">Rate %</th>
+                            <th style="font-size: 11px; width: 9%;">Amount (₹)</th>
                         </tr>
                     </thead>
                     <tbody id="itemsTbody">
@@ -218,7 +233,7 @@
                                 <td class="text-center row-num fw-bold">{{ loop.index }}</td>
                                 <td>
                                     <textarea name="product_name[]" class="form-control form-control-sm item-desc" rows="2" 
-                                              placeholder="e.g. Machine rental 22/9/26 to 7/10/26" required>{{ item.product_name }}</textarea>
+                                              placeholder="e.g. Machine rental&#10;22/9/26 to 7/10/26 =14 less 2day" required>{{ item.product_name }}</textarea>
                                 </td>
                                 <td>
                                     <input type="number" step="any" name="quantity[]" class="form-control form-control-sm text-end item-qty" 
@@ -226,27 +241,34 @@
                                 </td>
                                 <td>
                                     <input type="text" name="unit[]" class="form-control form-control-sm text-center item-unit" 
-                                           value="{{ item.unit }}" placeholder="Pcs/Nos">
+                                           value="{{ item.unit }}" placeholder="Nos">
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" name="rate[]" class="form-control form-control-sm text-end item-rate" 
+                                    <input type="number" step="any" name="rate[]" class="form-control form-control-sm text-end item-rate" 
                                            value="{{ '%.2f' | format(item.rate) }}" required>
                                 </td>
                                 <td>
-                                    <input type="text" class="form-control form-control-sm text-end bg-light item-taxable" 
-                                           value="{{ '%.2f' | format(item.taxable_value) }}" readonly>
+                                    <input type="number" step="any" name="taxable_value[]" class="form-control form-control-sm text-end item-taxable bg-light" 
+                                           value="{{ '%.2f' | format(item.taxable_value) }}" title="Auto calculated (Qty * Rate) or enter manually">
                                 </td>
                                 <td>
-                                    <select name="gst_rate[]" class="form-select form-select-sm item-gst">
-                                        <option value="0" {% if (item.cgst_rate + item.sgst_rate) == 0 %}selected{% endif %}>0%</option>
-                                        <option value="5" {% if (item.cgst_rate + item.sgst_rate) == 5 %}selected{% endif %}>5% (2.5+2.5)</option>
-                                        <option value="12" {% if (item.cgst_rate + item.sgst_rate) == 12 %}selected{% endif %}>12% (6+6)</option>
-                                        <option value="18" {% if (item.cgst_rate + item.sgst_rate) == 18 %}selected{% endif %}>18% (9+9)</option>
-                                        <option value="28" {% if (item.cgst_rate + item.sgst_rate) == 28 %}selected{% endif %}>28% (14+14)</option>
-                                    </select>
+                                    <input type="number" step="0.01" name="cgst_rate[]" class="form-control form-control-sm text-center item-cgst-rate fw-bold" 
+                                           value="{{ '%.2f' | format(item.cgst_rate) }}" placeholder="9.00">
                                 </td>
                                 <td>
-                                    <input type="text" class="form-control form-control-sm text-end fw-bold bg-light item-total" 
+                                    <input type="text" class="form-control form-control-sm text-end bg-light item-cgst-amt text-secondary" 
+                                           value="{{ '%.2f' | format(item.cgst_amount) }}" readonly>
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" name="sgst_rate[]" class="form-control form-control-sm text-center item-sgst-rate fw-bold" 
+                                           value="{{ '%.2f' | format(item.sgst_rate) }}" placeholder="9.00">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm text-end bg-light item-sgst-amt text-secondary" 
+                                           value="{{ '%.2f' | format(item.sgst_amount) }}" readonly>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm text-end fw-bold bg-light item-total text-primary" 
                                            value="{{ '%.2f' | format(item.total_amount) }}" readonly>
                                 </td>
                                 <td class="text-center">
@@ -270,27 +292,34 @@
                                 </td>
                                 <td>
                                     <input type="text" name="unit[]" class="form-control form-control-sm text-center item-unit" 
-                                           value="" placeholder="Nos / Pcs">
+                                           value="" placeholder="Nos">
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" name="rate[]" class="form-control form-control-sm text-end item-rate" 
+                                    <input type="number" step="any" name="rate[]" class="form-control form-control-sm text-end item-rate" 
                                            value="0.00" required>
                                 </td>
                                 <td>
-                                    <input type="text" class="form-control form-control-sm text-end bg-light item-taxable" 
+                                    <input type="number" step="any" name="taxable_value[]" class="form-control form-control-sm text-end item-taxable bg-light" 
+                                           value="0.00" title="Auto calculated (Qty * Rate) or enter manually">
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" name="cgst_rate[]" class="form-control form-control-sm text-center item-cgst-rate fw-bold" 
+                                           value="9.00" placeholder="9.00">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm text-end bg-light item-cgst-amt text-secondary" 
                                            value="0.00" readonly>
                                 </td>
                                 <td>
-                                    <select name="gst_rate[]" class="form-select form-select-sm item-gst">
-                                        <option value="18" selected>18% (9+9)</option>
-                                        <option value="12">12% (6+6)</option>
-                                        <option value="5">5% (2.5+2.5)</option>
-                                        <option value="0">0%</option>
-                                        <option value="28">28% (14+14)</option>
-                                    </select>
+                                    <input type="number" step="0.01" name="sgst_rate[]" class="form-control form-control-sm text-center item-sgst-rate fw-bold" 
+                                           value="9.00" placeholder="9.00">
                                 </td>
                                 <td>
-                                    <input type="text" class="form-control form-control-sm text-end fw-bold bg-light item-total" 
+                                    <input type="text" class="form-control form-control-sm text-end bg-light item-sgst-amt text-secondary" 
+                                           value="0.00" readonly>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm text-end fw-bold bg-light item-total text-primary" 
                                            value="0.00" readonly>
                                 </td>
                                 <td class="text-center">
@@ -302,6 +331,9 @@
                         {% endif %}
                     </tbody>
                 </table>
+            </div>
+            <div class="p-2 bg-light border-top text-muted small d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-info-circle me-1"></i> Give <strong>Rate</strong> and <strong>QTY</strong> &rarr; <strong>Taxable Value</strong> is computed. Give <strong>CGST %</strong> and <strong>SGST %</strong> &rarr; Taxes and Total are calculated automatically!</span>
             </div>
         </div>
     </div>
@@ -320,7 +352,7 @@
                     </div>
                     <div class="p-3 bg-light rounded border">
                         <div class="small fw-bold text-muted mb-1">TOTAL INVOICE AMOUNT IN WORDS:</div>
-                        <div id="liveWords" class="fw-bold text-primary">
+                        <div id="liveWords" class="fw-bold text-primary fs-6">
                             {{ invoice.amount_in_words if invoice else 'Zero Rupees Only /-' }}
                         </div>
                     </div>
@@ -340,7 +372,7 @@
                             <td class="text-end pe-3 fw-bold" id="summaryQty">0</td>
                         </tr>
                         <tr>
-                            <td class="ps-3 text-muted">Total Taxable Value:</td>
+                            <td class="ps-3 text-muted">Total Amount Before Tax:</td>
                             <td class="text-end pe-3 fw-bold" id="summaryTaxable">₹ 0.00</td>
                         </tr>
                         <tr>
@@ -375,7 +407,7 @@
 </form>
 
 <script>
-document-ready = function() {
+document.addEventListener('DOMContentLoaded', function() {
     const tableBody = document.getElementById('itemsTbody');
     const addRowBtn = document.getElementById('addRowBtn');
     const sameAsBillingCheck = document.getElementById('same_as_billing');
@@ -413,8 +445,21 @@ document-ready = function() {
         });
     }
 
+    // Quick preset buttons for all items
+    document.querySelectorAll('.set-all-gst').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const cgstVal = this.getAttribute('data-cgst');
+            const sgstVal = this.getAttribute('data-sgst');
+            document.querySelectorAll('.item-row').forEach(row => {
+                row.querySelector('.item-cgst-rate').value = parseFloat(cgstVal).toFixed(2);
+                row.querySelector('.item-sgst-rate').value = parseFloat(sgstVal).toFixed(2);
+            });
+            calculateTotals();
+        });
+    });
+
     // Dynamic calculations
-    function calculateTotals() {
+    function calculateTotals(lastChangedField, triggerRow) {
         const rows = document.querySelectorAll('.item-row');
         let totalQty = 0;
         let totalTaxable = 0;
@@ -424,24 +469,42 @@ document-ready = function() {
 
         rows.forEach((row, index) => {
             row.querySelector('.row-num').textContent = index + 1;
-            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-            const rate = parseFloat(row.querySelector('.item-rate').value) || 0;
-            const gst = parseFloat(row.querySelector('.item-gst').value) || 0;
+            const qtyInput = row.querySelector('.item-qty');
+            const rateInput = row.querySelector('.item-rate');
+            const taxableInput = row.querySelector('.item-taxable');
+            const cgstRateInput = row.querySelector('.item-cgst-rate');
+            const cgstAmtInput = row.querySelector('.item-cgst-amt');
+            const sgstRateInput = row.querySelector('.item-sgst-rate');
+            const sgstAmtInput = row.querySelector('.item-sgst-amt');
+            const totalInput = row.querySelector('.item-total');
 
-            const taxable = Math.round((qty * rate) * 100) / 100;
-            const halfGst = gst / 2;
-            const cgst = Math.round((taxable * (halfGst / 100)) * 100) / 100;
-            const sgst = Math.round((taxable * (halfGst / 100)) * 100) / 100;
-            const itemTotal = Math.round((taxable + cgst + sgst) * 100) / 100;
+            const qty = parseFloat(qtyInput.value) || 0;
+            const rate = parseFloat(rateInput.value) || 0;
 
-            row.querySelector('.item-taxable').value = taxable.toFixed(2);
-            row.querySelector('.item-total').value = itemTotal.toFixed(2);
+            let taxable = 0;
+            if (lastChangedField === 'taxable' && triggerRow === row) {
+                taxable = parseFloat(taxableInput.value) || 0;
+            } else {
+                taxable = Math.round((qty * rate) * 100) / 100;
+                taxableInput.value = taxable.toFixed(2);
+            }
+
+            const cgstRate = parseFloat(cgstRateInput.value) || 0;
+            const sgstRate = parseFloat(sgstRateInput.value) || 0;
+
+            const cgstAmt = Math.round((taxable * (cgstRate / 100)) * 100) / 100;
+            const sgstAmt = Math.round((taxable * (sgstRate / 100)) * 100) / 100;
+            const rowTotal = Math.round((taxable + cgstAmt + sgstAmt) * 100) / 100;
+
+            cgstAmtInput.value = cgstAmt.toFixed(2);
+            sgstAmtInput.value = sgstAmt.toFixed(2);
+            totalInput.value = rowTotal.toFixed(2);
 
             totalQty += qty;
             totalTaxable += taxable;
-            totalCgst += cgst;
-            totalSgst += sgst;
-            grandTotal += itemTotal;
+            totalCgst += cgstAmt;
+            totalSgst += sgstAmt;
+            grandTotal += rowTotal;
         });
 
         document.getElementById('summaryQty').textContent = totalQty;
@@ -455,7 +518,7 @@ document-ready = function() {
         document.getElementById('liveWords').textContent = inWords(Math.round(grandTotal));
     }
 
-    // Number to words converter in JS
+    // Number to words converter in JS (Indian Format)
     function inWords(num) {
         if (!num || num === 0) return 'Zero Rupees Only /-';
         const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
@@ -502,27 +565,34 @@ document-ready = function() {
             </td>
             <td>
                 <input type="text" name="unit[]" class="form-control form-control-sm text-center item-unit" 
-                       value="" placeholder="Nos / Pcs">
+                       value="" placeholder="Nos">
             </td>
             <td>
-                <input type="number" step="0.01" name="rate[]" class="form-control form-control-sm text-end item-rate" 
+                <input type="number" step="any" name="rate[]" class="form-control form-control-sm text-end item-rate" 
                        value="0.00" required>
             </td>
             <td>
-                <input type="text" class="form-control form-control-sm text-end bg-light item-taxable" 
+                <input type="number" step="any" name="taxable_value[]" class="form-control form-control-sm text-end item-taxable bg-light" 
+                       value="0.00" title="Auto calculated (Qty * Rate) or enter manually">
+            </td>
+            <td>
+                <input type="number" step="0.01" name="cgst_rate[]" class="form-control form-control-sm text-center item-cgst-rate fw-bold" 
+                       value="9.00" placeholder="9.00">
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm text-end bg-light item-cgst-amt text-secondary" 
                        value="0.00" readonly>
             </td>
             <td>
-                <select name="gst_rate[]" class="form-select form-select-sm item-gst">
-                    <option value="18" selected>18% (9+9)</option>
-                    <option value="12">12% (6+6)</option>
-                    <option value="5">5% (2.5+2.5)</option>
-                    <option value="0">0%</option>
-                    <option value="28">28% (14+14)</option>
-                </select>
+                <input type="number" step="0.01" name="sgst_rate[]" class="form-control form-control-sm text-center item-sgst-rate fw-bold" 
+                       value="9.00" placeholder="9.00">
             </td>
             <td>
-                <input type="text" class="form-control form-control-sm text-end fw-bold bg-light item-total" 
+                <input type="text" class="form-control form-control-sm text-end bg-light item-sgst-amt text-secondary" 
+                       value="0.00" readonly>
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm text-end fw-bold bg-light item-total text-primary" 
                        value="0.00" readonly>
             </td>
             <td class="text-center">
@@ -537,11 +607,32 @@ document-ready = function() {
     });
 
     function attachRowEvents(row) {
-        row.querySelectorAll('input, select, textarea').forEach(el => {
-            el.addEventListener('input', calculateTotals);
-            el.addEventListener('change', calculateTotals);
+        const qty = row.querySelector('.item-qty');
+        const rate = row.querySelector('.item-rate');
+        const taxable = row.querySelector('.item-taxable');
+        const cgstRate = row.querySelector('.item-cgst-rate');
+        const sgstRate = row.querySelector('.item-sgst-rate');
+
+        // When Qty or Rate changes -> recompute Taxable & Total
+        [qty, rate].forEach(el => {
+            el.addEventListener('input', () => calculateTotals('rate', row));
+            el.addEventListener('change', () => calculateTotals('rate', row));
         });
 
+        // When Taxable changes directly -> recompute Total based on given Taxable
+        taxable.addEventListener('input', () => calculateTotals('taxable', row));
+        taxable.addEventListener('change', () => calculateTotals('taxable', row));
+
+        // When CGST % changes -> auto match SGST % and recalculate
+        cgstRate.addEventListener('input', function() {
+            sgstRate.value = this.value;
+            calculateTotals('tax', row);
+        });
+
+        // When SGST % changes directly
+        sgstRate.addEventListener('input', () => calculateTotals('tax', row));
+
+        // Remove row
         row.querySelector('.remove-row-btn').addEventListener('click', function() {
             if (document.querySelectorAll('.item-row').length > 1) {
                 row.remove();
@@ -554,7 +645,6 @@ document-ready = function() {
 
     document.querySelectorAll('.item-row').forEach(attachRowEvents);
     calculateTotals();
-};
-document.addEventListener('DOMContentLoaded', document-ready);
+});
 </script>
 {% endblock %}
