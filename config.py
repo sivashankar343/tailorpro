@@ -10,9 +10,15 @@ class Config:
     # Database
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     INSTANCE_DIR = os.path.join(BASE_DIR, 'instance')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+    _raw_db_url = os.environ.get('DATABASE_URL')
+    if _raw_db_url and _raw_db_url.startswith('postgres://'):
+        _raw_db_url = _raw_db_url.replace('postgres://', 'postgresql://', 1)
+    SQLALCHEMY_DATABASE_URI = _raw_db_url or \
         f"sqlite:///{os.path.join(INSTANCE_DIR, 'tailoring.db')}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'connect_args': {'timeout': 30}
+    } if not _raw_db_url else {}
 
     # Session
     SESSION_COOKIE_HTTPONLY = True
