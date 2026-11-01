@@ -37,10 +37,10 @@ class OrderForm(FlaskForm):
 
 class ProductionForm(FlaskForm):
     order_id = SelectField('Order', validators=[DataRequired()], coerce=int)
-    quantity_completed = IntegerField('Quantity Completed', validators=[DataRequired(), NumberRange(min=0)], default=0)
+    quantity_completed = IntegerField('Return Completed', validators=[DataRequired(), NumberRange(min=1)], default=0)
     quantity_rejected = IntegerField('Quantity Rejected', validators=[Optional(), NumberRange(min=0)], default=0)
     remarks = TextAreaField('Remarks', validators=[Optional(), Length(max=500)])
-    submit = SubmitField('Record Production')
+    submit = SubmitField('Record Return Entry')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -188,8 +188,8 @@ def production_entry():
         completed = form.quantity_completed.data or 0
         rejected = form.quantity_rejected.data or 0
 
-        if completed + rejected == 0:
-            flash('Please enter at least one completed or rejected quantity.', 'warning')
+        if completed <= 0:
+            flash('Please enter a valid return completed quantity (must be greater than 0).', 'warning')
             return render_template('production.html', form=form)
 
         if (order.completed_quantity + completed + order.rejected_quantity + rejected) > order.total_quantity:
