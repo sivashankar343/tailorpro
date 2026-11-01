@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Production Entry{% endblock %}
+{% block title %}Return Entry{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title"><i class="bi bi-gear-wide-connected"></i> Production Entry</h1>
-        <p class="page-subtitle">Record completed and rejected garments for an order</p>
+        <h1 class="page-title"><i class="bi bi-arrow-return-left"></i> Return Entry</h1>
+        <p class="page-subtitle">Record completed and return/rejected garments for an order</p>
     </div>
 </div>
 
@@ -33,7 +33,7 @@
                             {% endfor %}
                         </div>
                         <div class="col-md-6">
-                            <label for="qtyRejected" class="form-label">Quantity Rejected</label>
+                            <label for="qtyRejected" class="form-label">Quantity Returned / Rejected</label>
                             {{ form.quantity_rejected(class="form-control", id="qtyRejected", placeholder="0", min=0) }}
                             {% for error in form.quantity_rejected.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
@@ -48,7 +48,7 @@
 
                     <div class="mt-4">
                         <button type="submit" class="btn btn-primary" id="submitProduction">
-                            <i class="bi bi-check-lg"></i> Record Production
+                            <i class="bi bi-check-lg"></i> Record Return Entry
                         </button>
                     </div>
                 </form>

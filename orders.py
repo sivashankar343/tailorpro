@@ -227,7 +227,7 @@ def production_entry():
         from excel_service import append_production_history
         append_production_history(entry, order, current_user.username)
 
-        flash(f'Production entry {entry.entry_id} recorded for order {order.order_id}.', 'success')
+        flash(f'Return entry {entry.entry_id} recorded for order {order.order_id}.', 'success')
         return redirect(url_for('orders.production_entry'))
 
     return render_template('production.html', form=form)
