@@ -401,16 +401,29 @@
             font-size: 11px;
         }
 
-        .terms-title {
+        .bank-title {
             font-weight: 900;
-            margin-bottom: 4px;
-            font-size: 11.5px;
+            margin-bottom: 6px;
+            font-size: 12px;
+            text-decoration: underline;
         }
 
-        .terms-text {
-            font-size: 10.5px;
-            line-height: 1.35;
+        .bank-details-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .bank-details-table td {
+            font-size: 11px;
             font-weight: 500;
+            padding: 2px 0;
+            line-height: 1.5;
+        }
+
+        .bank-details-table td.bank-label {
+            font-weight: 700;
+            white-space: nowrap;
+            padding-right: 4px;
         }
 
         .signatory-half {
@@ -442,41 +455,6 @@
         .auth-sig-text {
             font-size: 11.5px;
             font-weight: 500;
-        }
-
-        /* Bottom Slogan & GimBooks badge */
-        .footer-thanks {
-            text-align: center;
-            font-size: 11px;
-            font-style: italic;
-            font-weight: bold;
-            margin-top: 10px;
-            margin-bottom: 8px;
-        }
-
-        .footer-badge-pill {
-            margin: 0 auto;
-            width: fit-content;
-            background-color: #f7f4ea;
-            border: 1px solid #e3dec3;
-            border-radius: 12px;
-            padding: 6px 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        .doc-text {
-            font-size: 12px;
-            color: #495057;
-            font-weight: 500;
-        }
-
-        .gim-brand-name {
-            font-size: 13.5px;
-            font-weight: 900;
-            color: #212529;
         }
 
         /* Modal Overlay */
@@ -651,8 +629,8 @@
                     <tr>
                         <th rowspan="2" style="width: 5%;">Sr.<br>No.</th>
                         <th rowspan="2" class="th-product">Name of Product</th>
+                        <th rowspan="2" style="width: 8%;">SAC Code</th>
                         <th rowspan="2" style="width: 6%;">QTY</th>
-                        <th rowspan="2" style="width: 6%;">Unit</th>
                         <th rowspan="2" style="width: 8%;">Rate</th>
                         <th rowspan="2" style="width: 11%; background-color: #dbeaff;">Taxable<br>Value</th>
                         <th colspan="2" style="width: 14%;">CGST</th>
@@ -671,8 +649,8 @@
                     <tr>
                         <td>{{ loop.index }}</td>
                         <td class="td-product">{{ item.product_name }}</td>
+                        <td>{{ item.sac_code or '' }}</td>
                         <td>{{ '%g' | format(item.quantity) }}</td>
-                        <td>{{ item.unit }}</td>
                         <td>{{ '%.2f' | format(item.rate) }}</td>
                         <td style="background-color: #eaf2ff;">{{ '%.2f' | format(item.taxable_value) }}</td>
                         <td>{{ '%.2f%%' | format(item.cgst_rate) }}</td>
@@ -771,11 +749,28 @@
                 </div>
             </div>
 
-            <!-- Bottom Box: Terms on left, Signatory on right -->
+            <!-- Bottom Box: Bank Details on left, Signatory on right -->
             <div class="bottom-footer-box">
                 <div class="terms-half">
-                    <div class="terms-title">Terms And Conditions</div>
-                    <div class="terms-text">{{ invoice.terms_conditions }}</div>
+                    <div class="bank-title">Bank Details :</div>
+                    <table class="bank-details-table">
+                        <tr>
+                            <td class="bank-label">Bank</td>
+                            <td>: CANARA BANK</td>
+                        </tr>
+                        <tr>
+                            <td class="bank-label">Branch</td>
+                            <td>: JG NAGAR, TIRUPUR</td>
+                        </tr>
+                        <tr>
+                            <td class="bank-label">A/c. No.</td>
+                            <td>: 1244201001494</td>
+                        </tr>
+                        <tr>
+                            <td class="bank-label">IFSC</td>
+                            <td>: CNRB0016563</td>
+                        </tr>
+                    </table>
                 </div>
                 <div class="signatory-half">
                     <div>
@@ -787,18 +782,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Slogan & GimBooks badge below outer border -->
-        <div class="footer-thanks">
-            Thankyou for your business
-        </div>
-
-        <div class="footer-badge-pill">
-            <span class="doc-text">Document Made From</span>
-            <span style="font-size: 16px;">📊</span>
-            <span class="gim-brand-name">GimBooks</span>
-        </div>
-    </div>
 
     <!-- Delete Confirmation Modal -->
     <div class="modal-overlay" id="deleteModalOverlay">
